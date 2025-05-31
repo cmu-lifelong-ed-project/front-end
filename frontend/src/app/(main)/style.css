@@ -1,0 +1,30 @@
+.grid-main {
+  display: grid;
+  grid-template:
+    "n n n n n" 56px
+    "b b b b b"
+    "c c c c c" 1fr
+    "f f f f f" 60px;  
+  grid-template-columns: 280px 20px auto auto auto;
+}
+
+
+
+.grid-navbar {
+  grid-area: n;
+}
+
+.grid-banner {
+  grid-area: b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid-content {
+  grid-area: c;
+}
+
+.grid-footer {
+  grid-area: f; 
+}
