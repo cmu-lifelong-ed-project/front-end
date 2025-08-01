@@ -57,16 +57,19 @@ export default function Navbar() {
         isScrolled ? "bg-white/80 backdrop-blur-md shadow-md" : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* โลโก้ */}
-          <div className="flex-shrink-0">
-            <Link href="/main">
-              <span className="text-2xl font-bold text-black tracking-wide hover:text-gray-600 transition duration-200">
-                LifeLong
-              </span>
-            </Link>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex justify-between items-center h-18">
+        {/* โลโก้ */}
+        <div className="flex-shrink-0">
+          <Link href="/main">
+            <img
+              src="/logo_le.png"
+              alt="LifeLong Logo"
+              className="h-10 w-auto hover:opacity-80 transition duration-200"
+            />
+          </Link>
+        </div>
+
 
           {/* Desktop: ชื่อผู้ใช้ + ปุ่ม Sign out */}
           <div className="hidden md:flex space-x-4 items-center">
