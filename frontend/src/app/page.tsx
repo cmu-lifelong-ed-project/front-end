@@ -1,17 +1,34 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function IndexPage() {
   const CmuentraidURL = process.env.CMU_ENTRAID_URL as string;
   return (
-    <div className="min-h-screen flex items-center justify-center  px-4">
-      <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full text-center space-y-6">
-        <h1 className="text-2xl font-bold text-gray-800">Sign in using CMU EntraID</h1>
-        <Link href={`${CmuentraidURL}`}>
-          <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
+    <div className="min-h-screen flex items-center justify-center bg-[#dcc0f2] px-4">
+      <div className="bg-white rounded-3xl shadow-xl px-21 py-12 w-full max-w-2xl text-center space-y-10">
+        {/* Logo */}
+        <div className="flex justify-center mt-4 mb-15">
+          <Image
+            src="/logo_le.png"
+            alt="Logo"
+            width={300}
+            height={300}
+            priority
+          />
+        </div>
+
+        {/* Button */}
+        <Link href={CmuentraidURL}>
+          <button className="w-full bg-gradient-to-r from-purple-800 to-purple-400 text-white font-semibold py-3 rounded-full shadow-md text-base md:text-lg lg:text-xl">
             Sign-in with CMU Account
           </button>
         </Link>
+
+        {/* Small note */}
+        <p className="text-gray-500 text-xs md:text-sm mt-2">
+          For Chiang Mai University Personnel use ONLY
+        </p>
       </div>
     </div>
   );
