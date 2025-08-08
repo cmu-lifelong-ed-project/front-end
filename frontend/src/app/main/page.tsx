@@ -93,6 +93,7 @@ export default function QueuePage() {
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [token, setToken] = useState("");
 
+  
   const [staffStatusList, setStaffStatusList] = useState<StaffStatus[]>([]);
   const [userStatusList, setUserStatusList] = useState<UserStatus[]>([]);
   const [statusMappings, setStatusMappings] = useState<StatusMapping[]>([]);
@@ -379,244 +380,190 @@ export default function QueuePage() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800">Queue List</h2>
+<div className="bg-[#F8F4FF] p-6 min-h-screen">
+  <h2 className="text-2xl font-bold mb-4 text-[#7D3F98]">Queue List</h2>
 
-      <button
-        className="bg-green-600 text-white px-6 py-2 rounded shadow hover:bg-green-700 mb-8"
-        onClick={() => {
-          resetForm();
-          setShowModal(true);
-        }}
-      >
-        + Create Queue
-      </button>
+  <button
+    className="bg-[#34C759] text-white px-6 py-3 rounded-full shadow-md hover:bg-[#28A745] focus:outline-none mb-6"
+    onClick={() => {
+      resetForm();
+      setShowModal(true);
+    }}
+  >
+    + Create Queue
+  </button>
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl p-6 overflow-auto max-h-[90vh]">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-semibold">
-                {editMode ? "Edit Queue" : "Create New Queue"}
-              </h3>
-              <button
-                className="text-gray-600 hover:text-gray-900 text-3xl font-bold leading-none"
-                onClick={() => setShowModal(false)}
-              >
-                &times;
-              </button>
-            </div>
+  {showModal && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl p-8 overflow-auto max-h-[90vh] relative">
+        <h3 className="text-2xl font-extrabold text-center text-purple-700 mb-6">
+          {editMode ? "Edit Queue" : "Create New Queue"}
+        </h3>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSubmitQueue();
-              }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[75vh] overflow-auto"
-            >
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">Title</span>
-                <input
-                  type="text"
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">Faculty</span>
-                <select
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={faculty}
-                  onChange={(e) => setFaculty(e.target.value)}
-                  required
-                >
-                  <option value="">-- Select Faculty --</option>
-                  {facultyList.map((fac) => (
-                    <option key={fac.id} value={String(fac.id)}>
-                      {fac.nameTH} ({fac.code})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">Staff ID</span>
-                <input
-                  type="number"
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={staffId}
-                  onChange={(e) => setStaffId(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">Staff Status</span>
-                <select
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={staffStatusId}
-                  onChange={(e) => setStaffStatusId(e.target.value)}
-                  required
-                >
-                  <option value="">-- Select Status --</option>
-                  {staffStatusList.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.status}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">Course Status</span>
-                <select
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={courseStatusId}
-                  onChange={(e) => setCourseStatusId(e.target.value)}
-                >
-                  <option value="">-- Select Course Status --</option>
-                  {courseStatusList.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.status}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {/* datetime-local inputs */}
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">วันที่ได้รับไฟล์ Word (wordfile_submit)</span>
-                <input
-                  type="datetime-local"
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={wordfileSubmit}
-                  onChange={(e) => setWordfileSubmit(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">วันที่ได้รับบันทึกข้อความ (info_submit)</span>
-                <input
-                  type="datetime-local"
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={infoSubmit}
-                  onChange={(e) => setInfoSubmit(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">กรอบเวลา 14 วัน (info_submit_14days)</span>
-                <input
-                  type="datetime-local"
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={infoSubmit14days}
-                  onChange={(e) => setInfoSubmit14days(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">วันที่เปิดรับสมัคร (time_register)</span>
-                <input
-                  type="datetime-local"
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={timeRegister}
-                  onChange={(e) => setTimeRegister(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">เหลือเวลา (date_left) (วัน)</span>
-                <input
-                  type="number"
-                  min={0}
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={dateLeft}
-                  onChange={(e) => setDateLeft(Number(e.target.value))}
-                />
-              </label>
-
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">วันที่ต้องขึ้นเว็บ (on_web)</span>
-                <input
-                  type="datetime-local"
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={onWeb}
-                  onChange={(e) => setOnWeb(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="flex flex-col">
-                <span className="mb-1 font-medium text-gray-700">วันที่นัดหมาย (appointment_data_aw)</span>
-                <input
-                  type="datetime-local"
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={appointmentDataAw}
-                  onChange={(e) => setAppointmentDataAw(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="flex flex-col md:col-span-2">
-                <span className="mb-1 font-medium text-gray-700">Note</span>
-                <textarea
-                  rows={3}
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                />
-              </label>
-
-              <div className="md:col-span-2 flex justify-end gap-3 mt-4">
-                <button
-                  type="button"
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded"
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded"
-                >
-                  {editMode ? "Save Changes" : "Create"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={cards.map((c) => c.id)}
-          strategy={verticalListSortingStrategy}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmitQueue();
+          }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
-          <ul className="space-y-3">
-            {cards.map((item) => (
-              <SortableCard
-                key={item.id}
-                item={item}                     // ส่ง object ทั้งก้อน
-                onEdit={() => handleEditClick(item)}
-                facultyList={facultyList}       // ส่ง list เพื่อช่วยแสดงชื่อ faculty
-                courseStatusList={courseStatusList} // ส่ง list เพื่อช่วยแสดงชื่อ course status
+          {/* Title */}
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Title</span>
+            <input
+              type="text"
+              className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </label>
+
+          {/* Faculty */}
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Faculty</span>
+            <select
+              className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+              value={faculty}
+              onChange={(e) => setFaculty(e.target.value)}
+              required
+            >
+              <option value="">-- Select Faculty --</option>
+              {facultyList.map((fac) => (
+                <option key={fac.id} value={String(fac.id)}>
+                  {fac.nameTH} ({fac.code})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Staff ID */}
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Staff ID</span>
+            <input
+              type="number"
+              className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+              value={staffId}
+              onChange={(e) => setStaffId(e.target.value)}
+              required
+            />
+          </label>
+
+          {/* Staff Status */}
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Staff Status</span>
+            <select
+              className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+              value={staffStatusId}
+              onChange={(e) => setStaffStatusId(e.target.value)}
+              required
+            >
+              <option value="">-- Select Status --</option>
+              {staffStatusList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.status}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Course Status */}
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">Course Status</span>
+            <select
+              className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+              value={courseStatusId}
+              onChange={(e) => setCourseStatusId(e.target.value)}
+            >
+              <option value="">-- Select Course Status --</option>
+              {courseStatusList.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.status}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* DateTime Inputs */}
+          {[
+            { label: "วันที่ได้รับไฟล์ Word (wordfile_submit)", value: wordfileSubmit, setter: setWordfileSubmit },
+            { label: "วันที่ได้รับบันทึกข้อความ (info_submit)", value: infoSubmit, setter: setInfoSubmit },
+            { label: "กรอบเวลา 14 วัน (info_submit_14days)", value: infoSubmit14days, setter: setInfoSubmit14days },
+            { label: "วันที่เปิดรับสมัคร (time_register)", value: timeRegister, setter: setTimeRegister },
+            { label: "วันที่ต้องขึ้นเว็บ (on_web)", value: onWeb, setter: setOnWeb },
+            { label: "วันที่นัดหมาย (appointment_data_aw)", value: appointmentDataAw, setter: setAppointmentDataAw },
+          ].map((field, idx) => (
+            <label key={idx} className="flex flex-col gap-1">
+              <span className="text-sm font-semibold">{field.label}</span>
+              <input
+                type="datetime-local"
+                className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                value={field.value}
+                onChange={(e) => field.setter(e.target.value)}
+                required
               />
-            ))}
-          </ul>
-        </SortableContext>
-      </DndContext>
+            </label>
+          ))}
+
+          {/* Date Left */}
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-semibold">เหลือเวลา (date_left) (วัน)</span>
+            <input
+              type="number"
+              min={0}
+              className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+              value={dateLeft}
+              onChange={(e) => setDateLeft(Number(e.target.value))}
+            />
+          </label>
+
+          {/* Note */}
+          <label className="flex flex-col gap-1 md:col-span-2">
+            <span className="text-sm font-semibold">Note</span>
+            <textarea
+              rows={3}
+              className="rounded-2xl px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </label>
+
+          {/* Buttons */}
+          <div className="md:col-span-2 flex justify-end gap-4 mt-6">
+            <button
+              type="button"
+              className="px-6 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm font-semibold"
+              onClick={() => setShowModal(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+            >
+              {editMode ? "Save Changes" : "Create"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
+  )}
+
+  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
+      {cards.map((item) => (
+        <SortableCard
+          key={item.id}
+          item={item}
+          onEdit={() => handleEditClick(item)}
+          facultyList={facultyList}
+          courseStatusList={courseStatusList}
+        />
+      ))}
+    </SortableContext>
+  </DndContext>
+</div>
+
   );
 }
 
@@ -662,8 +609,9 @@ function SortableCard({
       style={style}
       {...attributes}
       {...listeners}
+
       onDoubleClick={onEdit}
-      className="bg-white rounded p-4 shadow cursor-grab flex flex-col select-none"
+      className="p-6 bg-white rounded-[30px] shadow mb-4 cursor-pointer hover:bg-gray-50"
       title="Double click to edit"
     >
       <h4 className="font-semibold text-lg">{item.title}</h4>
@@ -675,6 +623,7 @@ function SortableCard({
        <p className="text-sm text-gray-500">Date Left: {item.date_left ?? 0} วัน</p>
         {item.note && <p className="text-sm text-gray-500 italic">Note: {item.note}</p>}
     </li>
+
   );
 }
 
