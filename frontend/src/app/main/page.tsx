@@ -76,6 +76,7 @@ export default function QueuePage() {
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [token, setToken] = useState("");
 
+  
   const [staffStatusList, setStaffStatusList] = useState<StaffStatus[]>([]);
   const [userStatusList, setUserStatusList] = useState<UserStatus[]>([]);
   const [statusMappings, setStatusMappings] = useState<StatusMapping[]>([]);
@@ -335,130 +336,149 @@ export default function QueuePage() {
   }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Queue List</h2>
-
-      <button
-        className="bg-green-600 text-white px-6 py-2 rounded shadow hover:bg-green-700 mb-6"
-        onClick={() => {
-          resetForm();
-          setShowModal(true);
-        }}
-      >
-        + Create Queue
-      </button>
+<div className="bg-[#F8F4FF] p-6">
+<h2 className="text-2xl font-bold mb-4 text-[#7D3F98]">Queue List</h2>
+  <button
+    className="bg-[#34C759] text-white px-6 py-3 rounded-full shadow-md hover:bg-[#28A745] focus:outline-none mb-6"
+    onClick={() => {
+      resetForm();
+      setShowModal(true);
+    }}
+  >
+    + Create Queue
+  </button>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/5 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 relative">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">{editMode ? "Edit Queue" : "Create New Queue"}</h3>
-              <button
-                className="text-gray-600 hover:text-gray-800 text-xl"
-                onClick={() => setShowModal(false)}
-              >
-                ×
-              </button>
-            </div>
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm">
+    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative">
+      <h3 className="text-2xl font-extrabold text-center text-purple-700 mb-6">
+        {editMode ? "Edit Queue" : "Create New Queue"}
+      </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="flex flex-col">
-                <span className="text-sm font-medium">Title</span>
-                <input
-                  type="text"
-                  className="border rounded px-3 py-2"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Title */}
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">Title</span>
+          <input
+            type="text"
+            className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </label>
 
-              <label className="flex flex-col">
-                <span className="text-sm font-medium">Faculty</span>
-                <select
-                  className="border rounded px-3 py-2"
-                  value={faculty}
-                  onChange={(e) => setFaculty(e.target.value)}
-                >
-                  <option value="">-- Select Faculty --</option>
-                  {facultyList.map((fac) => (
-                    <option key={fac.id} value={String(fac.id)}>
-                      {fac.nameTH} ({fac.code})
-                    </option>
-                  ))}
-                </select>
-              </label>
+        {/* Faculty */}
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">Faculty</span>
+          <select
+            className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+            value={faculty}
+            onChange={(e) => setFaculty(e.target.value)}
+          >
+            <option value="">-- Select Faculty --</option>
+            {facultyList.map((fac) => (
+              <option key={fac.id} value={String(fac.id)}>
+                {fac.nameTH} ({fac.code})
+              </option>
+            ))}
+          </select>
+        </label>
 
-              <label className="flex flex-col">
-                <span className="text-sm font-medium">Staff ID</span>
-                <input
-                  type="number"
-                  className="border rounded px-3 py-2"
-                  value={staffId}
-                  onChange={(e) => setStaffId(e.target.value)}
-                />
-              </label>
+        {/* Staff ID */}
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">Staff ID</span>
+          <input
+            type="number"
+            className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+            value={staffId}
+            onChange={(e) => setStaffId(e.target.value)}
+          />
+        </label>
 
-              <label className="flex flex-col">
-                <span className="text-sm font-medium">Staff Status</span>
-                <select
-                  className="border rounded px-3 py-2"
-                  value={staffStatusId}
-                  onChange={(e) => setStaffStatusId(e.target.value)}
-                >
-                  <option value="">-- Select status --</option>
-                  {staffStatusList.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.status}
-                    </option>
-                  ))}
-                </select>
-              </label>
+        {/* Staff Status */}
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">Staff Status</span>
+          <select
+            className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+            value={staffStatusId}
+            onChange={(e) => setStaffStatusId(e.target.value)}
+          >
+            <option value="">-- Select Status --</option>
+            {staffStatusList.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.status}
+              </option>
+            ))}
+          </select>
+        </label>
 
-              <label className="flex flex-col">
-                <span className="text-sm font-medium">Course Status</span>
-                <select
-                  className="border rounded px-3 py-2"
-                  value={courseStatusId}
-                  onChange={(e) => setCourseStatusId(e.target.value)}
-                >
-                  <option value="">-- Select Course Status --</option>
-                  {courseStatusList.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.status}
-                    </option>
-                  ))}
-                </select>
-              </label>
+        {/* Course Status */}
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">Course Status</span>
+          <select
+            className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+            value={courseStatusId}
+            onChange={(e) => setCourseStatusId(e.target.value)}
+          >
+            <option value="">-- Select Course Status --</option>
+            {courseStatusList.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.status}
+              </option>
+            ))}
+          </select>
+        </label>
 
-              <label className="flex flex-col md:col-span-2">
-                <span className="text-sm font-medium">Note</span>
-                <textarea
-                  className="border rounded px-3 py-2"
-                  rows={3}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                />
-              </label>
-            </div>
+        {/* Note */}
+        <label className="flex flex-col gap-1 md:col-span-2">
+          <span className="text-sm font-semibold">Note</span>
+          <textarea
+            rows={4}
+            className="rounded-2xl px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </label>
+      </div>
 
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700"
-                onClick={handleSubmitQueue}
-              >
-                Submit
-              </button>
-              <button
-                className="bg-gray-300 text-gray-800 px-5 py-2 rounded hover:bg-gray-400"
-                onClick={() => setShowModal(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Buttons */}
+      <div className="mt-8 flex justify-end gap-4">
+        <button
+          type="button"
+          disabled={
+            title.trim() === "" ||
+            faculty.trim() === "" ||
+            staffId.trim() === "" ||
+            staffStatusId.trim() === "" ||
+            courseStatusId.trim() === ""
+          }
+          onClick={handleSubmitQueue}
+          className={`px-6 py-2 rounded-full text-white text-sm font-semibold transition-colors duration-200 ${
+            title.trim() &&
+            faculty.trim() &&
+            staffId.trim() &&
+            staffStatusId.trim() &&
+            courseStatusId.trim()
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-blue-300 cursor-not-allowed"
+          }`}
+        >
+          Submit
+        </button>
 
+        <button
+          type="button"
+          className="px-6 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm font-semibold"
+          onClick={() => setShowModal(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+#123
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
           {cards.map((item) => (
@@ -506,16 +526,15 @@ function SortableCard({
       style={style}
       {...attributes}
       {...listeners}
-      className="p-4 bg-white rounded shadow mb-2 cursor-pointer hover:bg-gray-50"
+      className="p-6 bg-white rounded-[30px] shadow mb-4 cursor-pointer hover:bg-gray-50"
       onClick={onClick}
     >
-      <h3 className="text-lg font-bold">{item.title}</h3>
-      <p className="text-sm text-gray-600">Priority: {item.priority}</p>
-      <p className="text-sm text-gray-500">Faculty: {facultyNameTH}</p>
-      <p className="text-sm text-gray-500">Staff Status: {item.staff_status.status}</p>
-      <p className="text-sm text-gray-500">User Status: {item.user_status.status}</p>
-      <p className="text-sm text-gray-500">Course Status: {courseStatusName}</p>
-      {item.note && <p className="text-sm text-gray-500 italic">Note: {item.note}</p>}
+      <h3 className="text-lg font-bold text-[#7C36A7] ">{item.title}</h3>
+      <p className="text-sm font-extrabold text-gray-600">Priority: <span className="font-normal">{item.priority}</span></p>
+      <p className="text-sm font-extrabold text-gray-500">Faculty: <span className="font-normal">{facultyNameTH}</span></p>
+      <p className="text-sm font-extrabold text-gray-500">Staff Status: <span className="font-normal">{item.staff_status.status}</span></p>  
+      <p className="text-sm font-extrabold text-gray-500">Course Status: <span className="font-normal">{courseStatusName}</span></p>
+      {item.note && <p className="text-sm font-extrabold text-gray-500 italic">Note: <span className="font-normal">{item.note}</span></p>}
     </div>
   );
 }
