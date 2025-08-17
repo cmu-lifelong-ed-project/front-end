@@ -478,7 +478,7 @@ export default function QueuePage() {
   </div>
 )}
 
-#123
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
           {cards.map((item) => (
