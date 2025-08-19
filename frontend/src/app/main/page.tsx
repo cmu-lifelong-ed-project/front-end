@@ -16,6 +16,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import dayjs from "dayjs";
+
+
 type CardItem = {
   id: number;
   priority: number;
@@ -37,7 +42,8 @@ type CardItem = {
   time_register?: string;         // วันที่เปิดรับสมัคร
   date_left?: number;             // เหลือเวลา (วัน)
   on_web?: string;                // ต้องขึ้นเว็บ
-  appointment_data_aw?: string;   // วันที่นัดหมาย
+  appointment_date_aw?: string;   // วันที่นัดหมาย
+  order_mappings?: Order_Mappings[];   
 };
 
 type StaffStatus = {
@@ -70,6 +76,20 @@ type CourseStatus = {
   type: string;
 };
 
+type OrderItem = {
+  id: number;
+  title: string;
+  checked: boolean; 
+};
+
+
+type Order_Mappings = {
+  id: number;
+  order_id: number;
+  listqueue_id: number;
+  checked: boolean | number | string;
+};
+
 export default function QueuePage() {
   const [cards, setCards] = useState<CardItem[]>([]);
   const [title, setTitle] = useState("");
@@ -86,14 +106,14 @@ export default function QueuePage() {
   const [timeRegister, setTimeRegister] = useState("");
   const [dateLeft, setDateLeft] = useState(0);
   const [onWeb, setOnWeb] = useState("");
-  const [appointmentDataAw, setAppointmentDataAw] = useState("");
+  const [appointmentDateAw, setAppointmentDateAw] = useState("");
 
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [token, setToken] = useState("");
 
-  
+  const [orders, setOrders] = useState<OrderItem[]>([]);
   const [staffStatusList, setStaffStatusList] = useState<StaffStatus[]>([]);
   const [userStatusList, setUserStatusList] = useState<UserStatus[]>([]);
   const [statusMappings, setStatusMappings] = useState<StatusMapping[]>([]);
@@ -123,25 +143,28 @@ export default function QueuePage() {
     fetchCourseStatus(t);
   }, []);
 
-  function fetchData(token: string) {
-    fetch("http://localhost:8080/api/listqueue", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      credentials: "include",
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch listqueue");
-        return res.json();
+      function fetchData(token: string) {
+      fetch("http://localhost:8080/api/listqueue", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
       })
-      .then((data) => {
-        const sortedData = data.sort((a: CardItem, b: CardItem) => a.priority - b.priority);
-        setCards(sortedData);
-      })
-      .catch((error) => {
-        console.error("Error loading queue:", error);
-      });
-  }
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch listqueue");
+          return res.json();
+        })
+        .then((data) => {
+          console.log("listqueue data", data);
+          const sortedData = data.sort(
+            (a: CardItem, b: CardItem) => a.priority - b.priority
+          );
+          setCards(sortedData);
+        })
+        .catch((error) => {
+          console.error("Error loading queue:", error);
+        });
+}
 
   function fetchStatuses(token: string) {
     Promise.all([
@@ -216,6 +239,8 @@ export default function QueuePage() {
       .catch((e) => console.error("Error fetching course status:", e));
   }
 
+  
+
   function getUserStatusByStaffStatusId(staffStatusId: number): string {
     const mapping = statusMappings.find((m) => m.staff_status_id === staffStatusId);
     if (!mapping) return "Unknown";
@@ -247,7 +272,7 @@ export default function QueuePage() {
       !infoSubmit14days ||
       !timeRegister ||
       !onWeb ||
-      !appointmentDataAw
+      !appointmentDateAw
     ) {
       alert("กรุณากรอกวันเวลาทุกช่องให้ครบ");
       return;
@@ -265,7 +290,7 @@ export default function QueuePage() {
       time_register: new Date(timeRegister).toISOString(),
       date_left: Number(dateLeft),
       on_web: new Date(onWeb).toISOString(),
-      appointment_data_aw: new Date(appointmentDataAw).toISOString(),
+      appointment_date_aw: new Date(appointmentDateAw).toISOString(),
       course_status_id: parseInt(courseStatusId),
       note,
     };
@@ -311,6 +336,71 @@ export default function QueuePage() {
       });
   }
 
+ 
+
+
+      function toBool(v: any): boolean {
+        if (typeof v === "boolean") return v;
+        if (typeof v === "number") return v === 1;
+        if (typeof v === "string") {
+          const s = v.trim().toLowerCase();
+          return s === "true" || s === "1";
+        }
+        return false;
+      }
+
+
+
+  async function fetchOrders(listQueueId: number) {
+    if (!token) return;
+    fetch(`http://localhost:8080/api/order/${listQueueId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setOrders(
+          (Array.isArray(data) ? data : []).map((o: any) => ({
+            id: Number(o.id),
+            title: o.title || `Order ${o.id}`,
+            checked: toBool(o.checked),
+          }))
+        );
+      })
+      .catch(console.error);
+  }
+
+
+useEffect(() => {
+  if (showModal && editMode && editingItemId != null) {
+    fetchOrders(editingItemId);
+  }
+}, [showModal, editMode, editingItemId, token]);
+
+
+function handleToggleOrder(order_id: number, checked: boolean) {
+    setOrders((prev) => prev.map((o) => (o.id === order_id ? { ...o, checked } : o)));
+
+    fetch("http://localhost:8080/api/order", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      credentials: "include",
+      body: JSON.stringify({ list_queue_id: editingItemId, order_id, checked }),
+    }).catch(console.error);
+  }
+
+
+   function mergeOrdersWithMapping(orders: OrderItem[], mappings: Order_Mappings[]): OrderItem[] {
+  return orders.map((o) => {
+    // หา mapping ของ order นี้
+    const mapping = mappings.find((m) => m.order_id === o.id);
+    return {
+      ...o,
+      checked: mapping ? toBool(mapping.checked) : false, // ใช้ฟังก์ชันแปลง boolean
+    };
+  });
+}
+
   function resetForm() {
     setTitle("");
     setFaculty("");
@@ -324,12 +414,13 @@ export default function QueuePage() {
     setTimeRegister("");
     setDateLeft(0);
     setOnWeb("");
-    setAppointmentDataAw("");
+    setAppointmentDateAw("");
     setEditMode(false);
     setEditingItemId(null);
+    setOrders([])
   }
 
-  function handleEditClick(item: CardItem) {
+function handleEditClick(item: CardItem) {
     setEditMode(true);
     setEditingItemId(item.id);
     setTitle(item.title);
@@ -345,7 +436,13 @@ export default function QueuePage() {
     setTimeRegister(item.time_register ? item.time_register.substring(0, 16) : "");
     setDateLeft(item.date_left ?? 0);
     setOnWeb(item.on_web ? item.on_web.substring(0, 16) : "");
-    setAppointmentDataAw(item.appointment_data_aw ? item.appointment_data_aw.substring(0, 16) : "");
+    setAppointmentDateAw(item.appointment_date_aw ? item.appointment_date_aw.substring(0, 16) : "");
+    if (item.order_mappings) {
+        setOrders(mergeOrdersWithMapping(orders, item.order_mappings));
+      } else {
+        setOrders(orders.map(o => ({ ...o, checked: false })));
+      }
+
 
     setShowModal(true);
   }
@@ -485,38 +582,27 @@ export default function QueuePage() {
           </label>
 
           {/* DateTime Inputs */}
-          {[
-            { label: "วันที่ได้รับไฟล์ Word (wordfile_submit)", value: wordfileSubmit, setter: setWordfileSubmit },
-            { label: "วันที่ได้รับบันทึกข้อความ (info_submit)", value: infoSubmit, setter: setInfoSubmit },
-            { label: "กรอบเวลา 14 วัน (info_submit_14days)", value: infoSubmit14days, setter: setInfoSubmit14days },
-            { label: "วันที่เปิดรับสมัคร (time_register)", value: timeRegister, setter: setTimeRegister },
-            { label: "วันที่ต้องขึ้นเว็บ (on_web)", value: onWeb, setter: setOnWeb },
-            { label: "วันที่นัดหมาย (appointment_data_aw)", value: appointmentDataAw, setter: setAppointmentDataAw },
-          ].map((field, idx) => (
-            <label key={idx} className="flex flex-col gap-1">
-              <span className="text-sm font-semibold">{field.label}</span>
-              <input
-                type="datetime-local"
-                className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
-                value={field.value}
-                onChange={(e) => field.setter(e.target.value)}
-                required
-              />
-            </label>
-          ))}
-
-          {/* Date Left */}
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">เหลือเวลา (date_left) (วัน)</span>
-            <input
-              type="number"
-              min={0}
-              className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
-              value={dateLeft}
-              onChange={(e) => setDateLeft(Number(e.target.value))}
-            />
-          </label>
-
+         {[
+                { label: "วันที่ได้รับไฟล์ Word (wordfile_submit)", value: wordfileSubmit, setter: setWordfileSubmit },
+                { label: "วันที่ได้รับบันทึกข้อความ (info_submit)", value: infoSubmit, setter: setInfoSubmit },
+                { label: "กรอบเวลา 14 วัน (info_submit_14days)", value: infoSubmit14days, setter: setInfoSubmit14days },
+                { label: "วันที่เปิดรับสมัคร (time_register)", value: timeRegister, setter: setTimeRegister },
+                { label: "วันที่ต้องขึ้นเว็บ (on_web)", value: onWeb, setter: setOnWeb },
+                { label: "วันที่นัดหมาย (appointment_date_aw)", value: appointmentDateAw, setter: setAppointmentDateAw },
+              ].map((field, idx) => (
+                <label key={idx} className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold">{field.label}</span>
+                  <DatePicker
+                    selected={field.value ? new Date(field.value) : null}
+                    onChange={(date) => field.setter(date ? dayjs(date).format("YYYY-MM-DDTHH:mm") : "")}
+                    showTimeSelect
+                    timeFormat="HH:mm"
+                    timeIntervals={30}
+                    dateFormat="dd/MM/yyyy HH:mm" // แสดงวัน/เดือน/ปี
+                    className="rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm w-full"
+                  />
+                </label>
+              ))}
           {/* Note */}
           <label className="flex flex-col gap-1 md:col-span-2">
             <span className="text-sm font-semibold">Note</span>
@@ -527,6 +613,19 @@ export default function QueuePage() {
               onChange={(e) => setNote(e.target.value)}
             />
           </label>
+
+        <div className="md:col-span-2">
+                <span className="text-sm font-semibold block mb-2">Orders</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {orders.map((order) => (
+                    <label key={`order-${order.id}`} className="flex items-center gap-2 border p-2 rounded">
+                      <input type="checkbox" checked={order.checked} onChange={(e) => handleToggleOrder(order.id, e.target.checked)} />
+                      <span>{order.id}</span>
+                      <span>{order.title}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
           {/* Buttons */}
           <div className="md:col-span-2 flex justify-end gap-4 mt-6">
