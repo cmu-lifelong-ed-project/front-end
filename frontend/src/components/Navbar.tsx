@@ -1,128 +1,128 @@
 'use client';
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { Manrope } from "next/font/google";
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [fullName, setFullName] = useState("");
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const cancelBtnRef = useRef<HTMLButtonElement | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
 
     const fetchUser = async () => {
       try {
         const res = await fetch("/api/whoAmI");
         const data = await res.json();
-        if (data.ok && data.cmuBasicInfo.length > 0) {
-          const user = data.cmuBasicInfo[0];
-          setFullName(user.firstname_EN + " " + user.lastname_EN);
+        if (data.ok && Array.isArray(data.cmuBasicInfo) && data.cmuBasicInfo.length > 0) {
+          const u = data.cmuBasicInfo[0];
+          setFullName(`${u.firstname_EN} ${u.lastname_EN}`);
         } else {
           setFullName("");
         }
-      } catch (error) {
+      } catch {
         setFullName("");
       }
     };
 
     window.addEventListener("scroll", handleScroll);
     fetchUser();
-
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // โฟกัสปุ่ม Cancel + ปิดด้วย Esc
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowLogoutModal(false);
+    };
+    if (showLogoutModal) {
+      cancelBtnRef.current?.focus();
+      window.addEventListener("keydown", onKeyDown);
+    }
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showLogoutModal]);
 
   const handleSignOut = async () => {
     try {
       const res = await fetch("/api/signOut", { method: "POST" });
       const data = await res.json();
       if (data.ok) {
-        // รีไดเรกต์ไปหน้า login หรือหน้าอื่น ๆ ตามต้องการ
         router.push("/");
       } else {
         alert("Sign out failed");
       }
-    } catch (error) {
+    } catch {
       alert("Error signing out");
     }
   };
 
   return (
     <nav
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        isScrolled ? "bg-white/80 backdrop-blur-md shadow-md" : "bg-transparent"
-      }`}
-    >
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex justify-between items-center h-18">
-        {/* โลโก้ */}
-        <div className="flex-shrink-0">
-          <Link href="/main">
-            <img
-              src="/logo_le.png"
-              alt="LifeLong Logo"
-              className="h-10 w-auto hover:opacity-80 transition duration-200"
-            />
-          </Link>
-        </div>
+        className={`${manrope.className} fixed top-0 left-0 w-full z-50 
+                    transition-all duration-300 
+                    ${isScrolled ? "bg-white/80 backdrop-blur-md shadow-md" : "bg-white"} 
+                    py-1`}
+      >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-18">
+          {/* โลโก้ */}
+          <div className="flex-shrink-0">
+            <Link href="/main">
+              <Image
+                src="/logo_le.png"
+                alt="LifeLong Logo"
+                width={120}
+                height={40}
+                className="h-10 w-auto hover:opacity-80 transition duration-200"
+                priority
+              />
+            </Link>
+          </div>
 
-
-          {/* Desktop: ชื่อผู้ใช้ + ปุ่ม Sign out */}
-          <div className="hidden md:flex space-x-4 items-center">
+          {/* Desktop: ป้ายชื่อ + ไอคอนออกขวา */}
+          <div className="hidden md:flex items-center gap-3">
             {fullName && (
               <>
-                <span className="text-black font-medium">
-                   {fullName}
-                </span>
+                <div className="px-4 py-2 rounded-full bg-purple-100 text-[#1E293B] shadow-sm min-w-[140px] text-center">
+                  {fullName}
+                </div>
                 <button
-                  onClick={handleSignOut}
-                  className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                  onClick={() => setShowLogoutModal(true)}
+                  aria-label="Sign out"
+                  className="p-2 rounded-lg hover:bg-gray-100 active:scale-95 transition flex items-center justify-center"
                 >
-                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-box-arrow-right" viewBox="0 0 16 16">
-                    <path fillRule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
-                    <path fillRule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
-                  </svg>
+                  <Image src="/exit.png" alt="logout" width={30} height={30} />
                 </button>
               </>
             )}
           </div>
 
-          {/* Mobile: ชื่อผู้ใช้ + ปุ่มเมนู + ปุ่ม Sign out ในเมนูมือถือ */}
-          <div className="md:hidden flex items-center space-x-3">
-            {fullName && (
-              <span className="text-black font-medium text-sm">
-                {fullName}
-              </span>
-            )}
+          {/* Mobile: แสดงเฉพาะ Hamburger (ชื่อ+logout อยู่ในเมนู) */}
+          <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-black hover:text-gray-600 focus:outline-none"
               aria-label="Toggle menu"
             >
-              <svg
-                className="h-7 w-7"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {isOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12" />
                 ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M4 6h16M4 12h16M4 18h16" />
                 )}
               </svg>
             </button>
@@ -130,37 +130,72 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* เมนูมือถือ + ปุ่ม Sign out */}
+      {/* เมนูมือถือ: ใส่ชื่อ + ปุ่มออกในนี้ */}
       {isOpen && (
-        <div className="md:hidden bg-white px-6 pt-4 pb-6 shadow-md rounded-b-xl space-y-3">
+        <div className="md:hidden bg-white px-6 pt-4 pb-6 shadow-md rounded-b-xl space-y-4">
+          {fullName && (
+            <div className="flex items-center justify-between">
+              <div className="px-4 py-2 rounded-full bg-purple-100 text-[#1E293B] shadow-sm">
+                {fullName}
+              </div>
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                aria-label="Sign out"
+                className="p-2 rounded-lg hover:bg-gray-100 active:scale-95 transition"
+              >
+                <Image src="/exit.png" alt="logout" width={20} height={20} />
+              </button>
+            </div>
+          )}
+
+          {/* ลิงก์เมนูอื่นๆ */}
           <MobileLink href="/" text="หน้าแรก" />
           <MobileLink href="/about" text="เกี่ยวกับ" />
           <MobileLink href="/contact" text="ติดต่อ" />
-          {fullName && (
-            <button
-              onClick={handleSignOut}
-              className="w-full px-4 py-2 mt-3 bg-red-600 text-white rounded hover:bg-red-100 transition"
-            >
-               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-box-arrow-right" viewBox="0 0 16 16">
-                  <path fillRule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
-                  <path fillRule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
-                </svg>
-            </button>
-          )}
         </div>
+      )}
+
+      {/* Modal ยืนยันออกจากระบบ (Manrope + โทนม่วง) */}
+      {showLogoutModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/45 backdrop-blur-sm z-[1000]"
+            onClick={() => setShowLogoutModal(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-title"
+            className="fixed z-[1001] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                       bg-white rounded-2xl shadow-xl w-[90%] max-w-[420px] p-6"
+          >
+            <h4 id="logout-title" className="text-center font-bold text-[20px] mb-2 text-purple-700">
+              Logout
+            </h4>
+            <p className="text-center text-gray-700 mb-6">
+              are you sure you want to log out?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                ref={cancelBtnRef}
+                onClick={() => setShowLogoutModal(false)}
+                className="px-6 py-2 rounded-full bg-purple-700 text-white font-medium hover:bg-purple-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="px-6 py-2 rounded-full bg-purple-100 text-purple-700 font-medium hover:bg-purple-200 transition"
+              >
+                Yes, Logout
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </nav>
   );
 }
-
-const NavLink = ({ href, text }: { href: string; text: string }) => (
-  <Link
-    href={href}
-    className="text-black font-medium hover:text-blue-500 transition duration-200"
-  >
-    {text}
-  </Link>
-);
 
 const MobileLink = ({ href, text }: { href: string; text: string }) => (
   <Link
