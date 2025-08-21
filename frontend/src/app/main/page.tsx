@@ -25,7 +25,15 @@ const notoSansThai = Noto_Sans_Thai({
   subsets: ["thai"],
   display: "swap",
 });
-
+type OrderMapping = {
+  id: number;
+  order_id: number;
+  checked: boolean;
+  order: {
+    id: number;
+    title: string;
+  };
+};
 /* ---------- Types ---------- */
 type CardItem = {
   id: number;
@@ -43,7 +51,8 @@ type CardItem = {
   time_register?: string;
   date_left?: number;
   on_web?: string;
-  appointment_data_aw?: string; // raw string (backend expects raw)
+  appointment_date_aw?: string; // raw string (backend expects raw)
+  order_mappings: OrderMapping[];
 };
 
 type StaffStatus = { id: number; status: string; type: string };
@@ -268,7 +277,7 @@ export default function QueuePage() {
   const [timeRegister, setTimeRegister] = useState("");
   const [dateLeft, setDateLeft] = useState(0);
   const [onWeb, setOnWeb] = useState("");
-  const [appointmentDataAw, setAppointmentDataAw] = useState(""); // datetime-local string
+  const [appointmentDateAw, setAppointmentDateAw] = useState(""); // datetime-local string
 
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -283,7 +292,8 @@ export default function QueuePage() {
 
   const [showSuccess, setShowSuccess] = useState<null | { mode: "create" | "edit" }>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
+  const [orderMappings, setOrderMappings] = useState<OrderMapping[]>([]);
+  const [currentId, setCurrentId] = useState<number | null>(null);
   // ทำให้ลากเริ่มหลังขยับ 8px กันเผลอแตะ
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -322,50 +332,59 @@ export default function QueuePage() {
   }, []);
 
   useEffect(() => {
-    const t = getCookie("backend-api-token");
-    if (!t) return;
-    setToken(t);
-    fetch("http://localhost:8080/api/listqueue", {
+  const t = getCookie("backend-api-token");
+  if (!t) return;
+  setToken(t);
+
+  // 👉 log listqueue
+  fetch("http://localhost:8080/api/listqueue", {
+    headers: { Authorization: `Bearer ${t}` },
+    credentials: "include",
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      setCards(
+        (data || []).sort(
+          (a: CardItem, b: CardItem) => a.priority - b.priority
+        )
+      );
+    })
+    .catch(console.error);
+
+  Promise.all([
+    fetch("http://localhost:8080/api/staffstatus", {
       headers: { Authorization: `Bearer ${t}` },
       credentials: "include",
+    }).then((r) => r.json()),
+    fetch("http://localhost:8080/api/userstatus", {
+      headers: { Authorization: `Bearer ${t}` },
+      credentials: "include",
+    }).then((r) => r.json()),
+    fetch("http://localhost:8080/api/staffstatus/bind", {
+      headers: { Authorization: `Bearer ${t}` },
+      credentials: "include",
+    }).then((r) => r.json()),
+    fetch("http://localhost:8080/api/faculty", {
+      headers: { Authorization: `Bearer ${t}` },
+      credentials: "include",
+    }).then((r) => r.json()),
+    fetch("http://localhost:8080/api/course/status", {
+      headers: { Authorization: `Bearer ${t}` },
+      credentials: "include",
+    }).then((r) => r.json()),
+  ])
+    .then(([staffS, userS, bind, fac, course]) => {
+    
+      
+      setStaffStatusList(staffS);
+      setUserStatusList(userS);
+      setStatusMappings(Array.isArray(bind) ? bind : bind.data ?? []);
+      setFacultyList(Array.isArray(fac) ? fac : fac.data ?? []);
+      setCourseStatusList(Array.isArray(course) ? course : course.data ?? []);
     })
-      .then((r) => r.json())
-      .then((data) =>
-        setCards(data.sort((a: CardItem, b: CardItem) => a.priority - b.priority))
-      )
-      .catch(console.error);
+    .catch(console.error);
+}, []);
 
-    Promise.all([
-      fetch("http://localhost:8080/api/staffstatus", {
-        headers: { Authorization: `Bearer ${t}` },
-        credentials: "include",
-      }).then((r) => r.json()),
-      fetch("http://localhost:8080/api/userstatus", {
-        headers: { Authorization: `Bearer ${t}` },
-        credentials: "include",
-      }).then((r) => r.json()),
-      fetch("http://localhost:8080/api/staffstatus/bind", {
-        headers: { Authorization: `Bearer ${t}` },
-        credentials: "include",
-      }).then((r) => r.json()),
-      fetch("http://localhost:8080/api/faculty", {
-        headers: { Authorization: `Bearer ${t}` },
-        credentials: "include",
-      }).then((r) => r.json()),
-      fetch("http://localhost:8080/api/course/status", {
-        headers: { Authorization: `Bearer ${t}` },
-        credentials: "include",
-      }).then((r) => r.json()),
-    ])
-      .then(([staffS, userS, bind, fac, course]) => {
-        setStaffStatusList(staffS);
-        setUserStatusList(userS);
-        setStatusMappings(Array.isArray(bind) ? bind : bind.data ?? []);
-        setFacultyList(Array.isArray(fac) ? fac : fac.data ?? []);
-        setCourseStatusList(Array.isArray(course) ? course : course.data ?? []);
-      })
-      .catch(console.error);
-  }, []);
 
   function handleSubmitQueue() {
     if (!token) {
@@ -378,7 +397,7 @@ export default function QueuePage() {
       !infoSubmit14days ||
       !timeRegister ||
       !onWeb ||
-      !appointmentDataAw
+      !appointmentDateAw
     ) {
       alert("กรุณากรอกวันเวลาทุกช่องให้ครบ");
       return;
@@ -395,7 +414,7 @@ export default function QueuePage() {
       time_register: new Date(timeRegister).toISOString(),
       date_left: Number(dateLeft),
       on_web: new Date(onWeb).toISOString(),
-      appointment_data_aw: appointmentDataAw, // ส่ง raw -> แก้ error 500
+      appointment_date_aw: new Date(appointmentDateAw).toISOString(), 
       course_status_id: parseInt(courseStatusId),
       note,
     };
@@ -447,7 +466,7 @@ export default function QueuePage() {
     setTimeRegister("");
     setDateLeft(0);
     setOnWeb("");
-    setAppointmentDataAw("");
+    setAppointmentDateAw("");
     setEditMode(false);
     setEditingItemId(null);
   }
@@ -467,8 +486,10 @@ export default function QueuePage() {
     setTimeRegister(item.time_register ? item.time_register.substring(0, 16) : "");
     setDateLeft(item.date_left ?? 0);
     setOnWeb(item.on_web ? item.on_web.substring(0, 16) : "");
-    setAppointmentDataAw(toDatetimeLocal(item.appointment_data_aw)); // ให้เข้า format ของ input
+    setAppointmentDateAw(toDatetimeLocal(item.appointment_date_aw)); // ให้เข้า format ของ input
     setShowModal(true);
+    setOrderMappings(item.order_mappings || []);
+    setCurrentId(item.id);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -489,6 +510,31 @@ export default function QueuePage() {
       });
     }
   }
+
+        async function handleToggleOrder(listQueueId: number, orderId: number, checked: boolean) {
+          if (!token) return;
+
+          try {
+            await fetch("http://localhost:8080/api/order", {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                order_id: orderId,       // 👈 ส่ง id ของ order โดยตรง
+                list_queue_id: listQueueId,
+                checked,
+              }),
+              credentials: "include",
+            });
+          } catch (err) {
+            console.error(err);
+            alert("Update order failed");
+          }
+        }
+
+
 
   function doLogout() {
     clearCookie("backend-api-token");
@@ -672,25 +718,41 @@ export default function QueuePage() {
                   <input
                     type="datetime-local"
                     placeholder="dd/mm/yyyy, --:--"
-                    value={appointmentDataAw}
-                    onChange={(e) => setAppointmentDataAw(e.target.value)}
+                    value={appointmentDateAw}
+                    onChange={(e) => setAppointmentDateAw(e.target.value)}
                     className={`${inputBase} [&::-webkit-datetime-edit]:text-gray-400`}
                     required
                   />
                 </label>
+                 {orderMappings?.length > 0 && (
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-semibold block mb-2">Orders</span>
+                        <div className="space-y-2">
+                          {orderMappings.map((om) => (
+                            <label key={om.id} className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={om.checked}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  // update local state
+                                  setOrderMappings((prev) =>
+                                    prev.map((o) => (o.id === om.id ? { ...o, checked } : o))
+                                  );
+                                  // call API โดยส่ง order.id
+                                  if (currentId && om.order?.id) {
+                                    handleToggleOrder(currentId, om.order.id, checked);
+                                  }
+                                }}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-sm text-gray-700">{om.order?.title}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                {/* Date left */}
-                <label className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold">เหลือเวลา (date left) (วัน)</span>
-                  <input
-                    type="number"
-                    min={0}
-                    placeholder="0"
-                    className={inputBase}
-                    value={dateLeft}
-                    onChange={(e) => setDateLeft(Number(e.target.value))}
-                  />
-                </label>
 
                 {/* Note */}
                 <label className="flex flex-col gap-1 md:col-span-2">
