@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Noto_Sans_Thai } from "next/font/google";
 import Image from "next/image";
-
+import { v4 as uuidv4 } from "uuid"; 
 import {
   DndContext,
   closestCenter,
@@ -55,7 +55,7 @@ type CardItem = {
   order_mappings: OrderMapping[];
 };
 
-type StaffStatus = { id: number; status: string; type: string };
+type StaffStatus = { id: number; status: string; type: string ; user_status?: UserStatus;};
 type UserStatus = { id: number; status: string; type: string };
 type StatusMapping = { staff_status_id: number; user_status_id: number };
 type FacultyItem = { id: number; code: string; nameTH: string; nameEN: string };
@@ -294,6 +294,17 @@ export default function QueuePage() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [orderMappings, setOrderMappings] = useState<OrderMapping[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
+  const [showAddOrder, setShowAddOrder] = useState(false);
+  const [newOrderTitle, setNewOrderTitle] = useState("");
+  const [showManageStatus, setShowManageStatus] = useState(false);
+ 
+  const [modalMessage, setModalMessage] = useState<string | null>(null);
+  const [showAddPopup, setShowAddPopup] = useState(false);
+  const [newStatusName, setNewStatusName] = useState("");
+    const [selectedStaffStatusId, setSelectedStaffStatusId] = useState<number | null>(null);
+    const [selectedUserStatusId, setSelectedUserStatusId] = useState("");
+    const [showUserStatusModal, setShowUserStatusModal] = useState(false);
+
   // ทำให้ลากเริ่มหลังขยับ 8px กันเผลอแตะ
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -351,16 +362,13 @@ export default function QueuePage() {
     })
     .catch(console.error);
 
+  // Fetch master data
   Promise.all([
     fetch("http://localhost:8080/api/staffstatus", {
       headers: { Authorization: `Bearer ${t}` },
       credentials: "include",
     }).then((r) => r.json()),
     fetch("http://localhost:8080/api/userstatus", {
-      headers: { Authorization: `Bearer ${t}` },
-      credentials: "include",
-    }).then((r) => r.json()),
-    fetch("http://localhost:8080/api/staffstatus/bind", {
       headers: { Authorization: `Bearer ${t}` },
       credentials: "include",
     }).then((r) => r.json()),
@@ -373,17 +381,15 @@ export default function QueuePage() {
       credentials: "include",
     }).then((r) => r.json()),
   ])
-    .then(([staffS, userS, bind, fac, course]) => {
-    
-      
+    .then(([staffS, userS, fac, course]) => {
       setStaffStatusList(staffS);
       setUserStatusList(userS);
-      setStatusMappings(Array.isArray(bind) ? bind : bind.data ?? []);
       setFacultyList(Array.isArray(fac) ? fac : fac.data ?? []);
       setCourseStatusList(Array.isArray(course) ? course : course.data ?? []);
     })
     .catch(console.error);
 }, []);
+
 
 
   function handleSubmitQueue() {
@@ -613,23 +619,26 @@ export default function QueuePage() {
                 </label>
 
                 {/* Staff Status */}
-                <label className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold">Staff Status</span>
-                  <select
-                    className={selectBase}
-                    value={staffStatusId}
-                    onChange={(e) => setStaffStatusId(e.target.value)}
-                    required
-                  >
-                    <option value="">-- Select Status --</option>
-                    {staffStatusList.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.status}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <label className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold">Staff Status</span>
+                     
+                        <select
+                          className={selectBase}
+                          value={staffStatusId}
+                          onChange={(e) => setStaffStatusId(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Select Status --</option>
+                          {staffStatusList.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.status}
+                            </option>
+                          ))}
+                        </select>
+                      
+                    </label>
 
+   
                 {/* Course Status */}
                 <label className="flex flex-col gap-1">
                   <span className="text-sm font-semibold">Course Status</span>
@@ -724,34 +733,120 @@ export default function QueuePage() {
                     required
                   />
                 </label>
-                 {orderMappings?.length > 0 && (
+                {/* Orders checkbox list */}
+                    {orderMappings?.length > 0 && (
                       <div className="md:col-span-2">
                         <span className="text-sm font-semibold block mb-2">Orders</span>
                         <div className="space-y-2">
                           {orderMappings.map((om) => (
-                            <label key={om.id} className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={om.checked}
-                                onChange={(e) => {
-                                  const checked = e.target.checked;
-                                  // update local state
-                                  setOrderMappings((prev) =>
-                                    prev.map((o) => (o.id === om.id ? { ...o, checked } : o))
-                                  );
-                                  // call API โดยส่ง order.id
-                                  if (currentId && om.order?.id) {
-                                    handleToggleOrder(currentId, om.order.id, checked);
-                                  }
-                                }}
-                                className="w-4 h-4"
-                              />
-                              <span className="text-sm text-gray-700">{om.order?.title}</span>
-                            </label>
+                              <label key={om.id} className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={om.checked}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setOrderMappings((prev) =>
+                                      prev.map((o) => (o.id === om.id ? { ...o, checked } : o))
+                                    );
+                                    if (currentId && om.order?.id) {
+                                      handleToggleOrder(currentId, om.order.id, checked);
+                                    }
+                                  }}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-sm text-gray-700">{om.order?.title}</span>
+                              </label>
                           ))}
-                        </div>
-                      </div>
+
+                {/* ปุ่มสร้าง order ใหม่ */}
+                                      
+                <button
+                  type="button"
+                  className="mt-2 px-3 py-1.5 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700"
+                  onClick={() => setShowAddOrder(true)}
+                >
+                  + Add Order
+                </button>
+
+                {/* Popup สำหรับสร้าง Order */}
+              {showAddOrder && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-6">
+                    <h2 className="text-lg font-semibold mb-4">Create New Order</h2>
+
+                    <input
+                      type="text"
+                      value={newOrderTitle}
+                      onChange={(e) => setNewOrderTitle(e.target.value)}
+                      placeholder="Enter order title..."
+                      className="w-full border rounded-lg px-3 py-2 text-sm mb-4"
+                    />
+
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm font-semibold"
+                        onClick={() => {
+                          setShowAddOrder(false);
+                          setNewOrderTitle("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                            <button
+                              type="button"
+                              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-semibold"
+                              onClick={async () => {
+                                if (!newOrderTitle || !currentId) return;
+
+                                try {
+                                  const res = await fetch("http://localhost:8080/api/order", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      Authorization: `Bearer ${token}`,
+                                    },
+                                    credentials: "include",
+                                    body: JSON.stringify({
+                                      list_queue_id: currentId,
+                                      title: newOrderTitle,
+                                    }),
+                                  });
+
+                                  if (!res.ok) throw new Error("Create order failed");
+                                  const newOrder = await res.json();
+
+                                  // ถ้า backend คืนเป็น order ธรรมดา
+                                  setOrderMappings((prev) => [
+                                      ...prev,
+                                      {
+                                        id: newOrder.mapping_id ?? uuidv4(),
+                                        order_id: newOrder.id,
+                                        checked: false,
+                                        order: { id: newOrder.id, title: newOrder.title },
+                                        list_queue_id: currentId,
+                                      },
+                                    ]);
+
+                                  setShowAddOrder(false);
+                                  setNewOrderTitle("");
+                                } catch (err) {
+                                  console.error(err);
+                                  alert("สร้าง Order ไม่สำเร็จ");
+                                }
+                              }}
+                            >
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                     </div>
+                     </div>
                     )}
+
 
 
                 {/* Note */}
