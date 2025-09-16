@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 const AUTH_COOKIE = "backend-api-token";
 const PUBLIC_PATHS = ["/signin"];
-const PRIVATE_PATHS = ["/main", "/cmuEntraIDCallback", "/profile"];
+const PRIVATE_PATHS = ["/main", "/profile"];
 
 const isPublic = (pathname: string) => PUBLIC_PATHS.includes(pathname);
 const isPrivate = (pathname: string) => PRIVATE_PATHS.includes(pathname);
@@ -36,5 +36,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/signin", "/main", "/cmuEntraIDCallback", "/profile"],
+  matcher: ["/", "/signin", "/main", "/profile"],
 };
