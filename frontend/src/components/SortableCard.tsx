@@ -55,7 +55,7 @@ export default function SortableCard({
           <div className="md:hidden text-center -mt-1">
             <div
               className="text-[44px] leading-none font-extrabold text-transparent bg-clip-text select-none"
-              style={{ backgroundImage: getTitleGradient(courseStatusName) }}
+               style={{ color: QUEUE_NUMBER_PURPLE }}
             >
               {item.priority ?? 1}
             </div>
@@ -81,7 +81,7 @@ export default function SortableCard({
           <div className="hidden md:flex md:col-span-2 md:items-center justify-center">
             <div
               className="text-[52px] lg:text-[60px] leading-none font-extrabold select-none text-transparent bg-clip-text"
-              style={{ backgroundImage: getTitleGradient(courseStatusName) }}
+              style={{ color: QUEUE_NUMBER_PURPLE }} 
               title="Drag to reorder"
             >
               {item.priority ?? 1}
@@ -90,7 +90,7 @@ export default function SortableCard({
 
           {/* Info */}
           <div className="md:col-span-6 space-y-4 sm:space-y-5 text-[#4A5568]">
-            <Line icon="/Priority.png" label="Priority" value={item.priority ?? "-"} />
+
             <Line icon="/Staff ID.png" label="Staff ID" value={item.staff_id ?? "-"} />
             <Line icon="/Faculty.png" label="Faculty" value={facultyNameTH} labelPad="ml-7 sm:ml-11" />
             <Line icon="/Staff Status.png" label="Staff Status" value={item.staff_status?.status ?? "-"} labelPad="ml-3" />
