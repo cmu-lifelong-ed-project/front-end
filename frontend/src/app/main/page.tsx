@@ -68,13 +68,22 @@ export default function QueuePage() {
   const [facultyList, setFacultyList] = useState<FacultyItem[]>([]);
   const [courseStatusList, setCourseStatusList] = useState<CourseStatus[]>([]);
 
-  const [showSuccess, setShowSuccess] = useState<null | {
-    mode: "create" | "edit";
-  }>(null);
+  const [showSuccess, setShowSuccess] = useState<null | { mode: "create" | "edit" }>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const [orderMappings, setOrderMappings] = useState<OrderMapping[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
+
+  //  เก็บผลรวมงานของแต่ละคิว (ใช้สำหรับส่งให้การ์ด)
+  const [progressMap, setProgressMap] =
+    useState<Record<number, { done: number; total: number }>>({});
+
+  // helper สรุปงานจาก order_mappings
+  function summarizeMappings(oms: OrderMapping[] = []) {
+    const total = oms.length;
+    const done = oms.filter((o) => o.checked).length;
+    return { done, total };
+  }
 
   // drag sensors
   const sensors = useSensors(
@@ -104,13 +113,21 @@ export default function QueuePage() {
       credentials: "include",
     })
       .then((r) => r.json())
-      .then((data) =>
-        setCards(
-          (data || []).sort(
-            (a: CardItem, b: CardItem) => a.priority - b.priority
-          )
-        )
-      )
+      .then((data) => {
+        const sorted = (data || []).sort(
+          (a: CardItem, b: CardItem) => a.priority - b.priority
+        );
+        setCards(sorted);
+
+        //  คำนวณ progress เริ่มต้นของแต่ละคิวจาก order_mappings ที่มากับ API
+        const map: Record<number, { done: number; total: number }> = {};
+        sorted.forEach((c: CardItem) => {
+          // ถ้า type ของ CardItem ยังไม่มี order_mappings ให้เพิ่มใน types/queue.ts (order_mappings?: OrderMapping[])
+          const { done, total } = summarizeMappings((c as any).order_mappings || []);
+          map[c.id] = { done, total };
+        });
+        setProgressMap(map);
+      })
       .catch(console.error);
 
     Promise.all([
@@ -194,6 +211,7 @@ export default function QueuePage() {
         setShowSuccess({ mode: editMode ? "edit" : "create" });
         setShowModal(false);
         resetForm();
+
         if (editMode) {
           if (editingItemId && staffStatusId) {
             await fetch(
@@ -213,6 +231,10 @@ export default function QueuePage() {
         } else {
           setCards((prev) => [...prev, updatedItem]);
         }
+
+        // ✅ อัปเดต progressMap จากข้อมูลล่าสุดที่ API ส่งกลับ (ถ้ามี order_mappings)
+        const summary = summarizeMappings((updatedItem as any).order_mappings || []);
+        setProgressMap((prev) => ({ ...prev, [updatedItem.id]: summary }));
       })
       .catch((err) => alert(err.message));
   }
@@ -244,25 +266,17 @@ export default function QueuePage() {
     setFaculty(item.faculty);
     setStaffId(String(item.staff_id));
     setStaffStatusId(String(item.staff_status.id));
-    setCourseStatusId(
-      item.course_status_id ? String(item.course_status_id) : ""
-    );
+    setCourseStatusId(item.course_status_id ? String(item.course_status_id) : "");
     setNote(item.note || "");
-    setWordfileSubmit(
-      item.wordfile_submit ? item.wordfile_submit.substring(0, 16) : ""
-    );
+    setWordfileSubmit(item.wordfile_submit ? item.wordfile_submit.substring(0, 16) : "");
     setInfoSubmit(item.info_submit ? item.info_submit.substring(0, 16) : "");
-    setInfoSubmit14days(
-      item.info_submit_14days ? item.info_submit_14days.substring(0, 16) : ""
-    );
-    setTimeRegister(
-      item.time_register ? item.time_register.substring(0, 16) : ""
-    );
+    setInfoSubmit14days(item.info_submit_14days ? item.info_submit_14days.substring(0, 16) : "");
+    setTimeRegister(item.time_register ? item.time_register.substring(0, 16) : "");
     setDateLeft(item.date_left ?? 0);
     setOnWeb(item.on_web ? item.on_web.substring(0, 16) : "");
     setAppointmentDateAw(toDatetimeLocal(item.appointment_date_aw));
     setShowModal(true);
-    setOrderMappings(item.order_mappings || []);
+    setOrderMappings((item as any).order_mappings || []);
     setCurrentId(item.id);
   }
 
@@ -322,30 +336,29 @@ export default function QueuePage() {
   return (
     <div className={`${notoSansThai.className} bg-[#F8F4FF] min-h-screen`}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
+        
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-2 sm:mb-1">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#7D3F98]">
-            Queue List
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#8741D9]">
+            รายการคิว
           </h2>
           <div className="flex items-center gap-3">
             <button
-              className="self-start sm:self-auto bg-[#34C759] text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-full shadow-md hover:bg-[#28A745] focus:outline-none"
+              className="self-start sm:self-auto bg-[#34C759] text-white px-5 sm:px-3 py-2.5 sm:py-2 rounded-full shadow-md hover:bg-[#28A745] focus:outline-none"
               onClick={() => {
                 resetForm();
                 setShowModal(true);
               }}
             >
-              + Create Queue
+              + สร้างรายการคิว
             </button>
           </div>
         </div>
+
         {/* Filter */}
-        <div className="mb-8">
-          <div className="inline-flex items-center text-base text-gray-600 gap-1">
-            <Funnel className="w-4 h-4" />
-            Filter
-          </div>
+        <div className="mt-6 mb-8">
           <FilterDropdown items={courseStatusList} />
         </div>
+
         {/* Modal */}
         <QueueModal
           isOpen={showModal}
@@ -386,6 +399,10 @@ export default function QueuePage() {
           currentId={currentId}
           onToggleOrder={handleToggleOrder}
           token={token}
+          // ✅ รับผลรวมจาก modal แล้วยิงกลับมาอัปเดตแผนที่
+          onOrdersChanged={(listQueueId, summary) => {
+            setProgressMap((prev) => ({ ...prev, [listQueueId]: summary }));
+          }}
         />
 
         {/* List + DnD */}
@@ -399,15 +416,21 @@ export default function QueuePage() {
             strategy={verticalListSortingStrategy}
           >
             <ul className="space-y-4 sm:space-y-6">
-              {cards.map((item) => (
-                <SortableCard
-                  key={item.id}
-                  item={item}
-                  onEdit={() => handleEditClick(item)}
-                  facultyList={facultyList}
-                  courseStatusList={courseStatusList}
-                />
-              ))}
+              {cards.map((item) => {
+                const p = progressMap[item.id] || { done: 0, total: 0 };
+                return (
+                  <SortableCard
+                    key={item.id}
+                    item={item}
+                    onEdit={() => handleEditClick(item)}
+                    facultyList={facultyList}
+                    courseStatusList={courseStatusList}
+                    // ✅ ส่งค่าเปอร์เซ็นต์ให้การ์ดคำนวณและเปลี่ยนสีหลอด
+                    progressDone={p.done}
+                    progressTotal={p.total}
+                  />
+                );
+              })}
             </ul>
           </SortableContext>
         </DndContext>
