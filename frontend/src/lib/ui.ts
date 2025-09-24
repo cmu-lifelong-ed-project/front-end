@@ -17,7 +17,19 @@ export const COURSE_STATUS_COLORS: Record<string, string> = {
     Cancel: ["#EF5350", "#C62828"],
   };
   
-  export const QUEUE_NUMBER_PURPLE = "#7D3F98";
+  export const QUEUE_NUMBER_PURPLE = "#8741D9";
+
+  // หลอด percent 
+  export function getProgressColor(percent: number) {
+      if (percent <= 25) return "bg-red-500";       // 🔴 0–25
+      if (percent <= 50) return "bg-orange-400";    // 🟠 26–50
+      if (percent <= 75) return "bg-blue-500";      // 🔵 51–75
+      return "bg-green-500";                        // 🟢 76–100
+    }
+
+
+
+
   
   export function getTitleGradient(statusName?: string) {
     const key = statusName ?? "Not Started";
