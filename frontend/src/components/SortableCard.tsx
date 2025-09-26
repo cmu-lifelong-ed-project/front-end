@@ -5,29 +5,49 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import DateLeftCountdown from "./DateLeftCountdown";
 import { CardItem, CourseStatus, FacultyItem } from "../types/queue";
-import { getStatusColorByName, hexToRgba, getTitleGradient, QUEUE_NUMBER_PURPLE,getProgressColor } from "../lib/ui";
+import {
+  getStatusColorByName,
+  hexToRgba,
+  QUEUE_NUMBER_PURPLE,
+  getProgressColor,
+} from "../lib/ui";
+
+interface SortableCardProps {
+  item: CardItem;
+  onEdit: () => void;
+  facultyList: FacultyItem[];
+  courseStatusList: CourseStatus[];
+  progressDone?: number;
+  progressTotal?: number;
+  token: string;
+  canDrag: boolean; // รับ prop จาก QueuePage
+}
 
 export default function SortableCard({
   item,
   onEdit,
   facultyList,
   courseStatusList,
-  progressDone = 0,      
+  progressDone = 0,
   progressTotal = 0,
-}: {
-  item: CardItem;
-  onEdit: () => void;
-  facultyList: FacultyItem[];
-  courseStatusList: CourseStatus[];
-  progressDone?: number; 
-  progressTotal?: number;
-}) {
+  token,
+  canDrag,
+}: SortableCardProps) {
   const percent = Math.max(
     0,
     Math.min(100, progressTotal > 0 ? Math.round((progressDone / progressTotal) * 100) : 0)
   );
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
-  const style = { transform: CSS.Transform.toString(transform), transition } as React.CSSProperties;
+
+  // ใช้ canDrag เพื่อเปิด/ปิด drag
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: item.id,
+    disabled: !canDrag,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  } as React.CSSProperties;
 
   const facultyNameTH =
     facultyList.find((f) => String(f.id) === String(item.faculty))?.nameTH || "Unknown Faculty";
@@ -38,17 +58,19 @@ export default function SortableCard({
   const containerBgTint = hexToRgba(mainColor, 0.08);
   const badgeFill = hexToRgba(mainColor, 0.3);
   const badgeBorder = mainColor;
-  // ใต้ที่คำนวณ percent เดิม
   const barColorClass = getProgressColor(percent);
-  return (
-    <li ref={setNodeRef} style={style} {...attributes} className="relative list-none">
-      <div className="relative bg-white rounded-3xl w-full max-w-3xl sm:max-w-4xl lg:max-w-5xl mx-auto p-5 sm:p-7 lg:p-9 shadow-[0_10px_30px_rgba(251,111,146,0.10)]">
-        <div
-          className="grid grid-cols-1 md:grid-cols-[max-content_1fr_max-content] items-center gap-2 sm:gap-4 cursor-grab active:cursor-grabbing touch-action-none select-none"
-          {...listeners}
-        >
 
-          {/* Status */}
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...(canDrag ? listeners : {})}
+      className="relative list-none"
+    >
+      <div className="relative bg-white rounded-3xl w-full max-w-3xl sm:max-w-4xl lg:max-w-5xl mx-auto p-5 sm:p-7 lg:p-9 shadow-[0_10px_30px_rgba(251,111,146,0.10)]">
+        {/* Header */}
+        <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr_max-content] items-center gap-2 sm:gap-4 cursor-grab active:cursor-grabbing touch-action-none select-none">
           <div
             className="w-full md:w-auto px-3 py-[6px] rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap text-center select-none justify-self-start"
             style={{
@@ -62,7 +84,6 @@ export default function SortableCard({
             {courseStatusName}
           </div>
 
-          {/* Priority (mobile) */}
           <div className="md:hidden text-center -mt-1">
             <div
               className="text-[44px] leading-none font-extrabold text-transparent bg-clip-text select-none"
@@ -72,7 +93,6 @@ export default function SortableCard({
             </div>
           </div>
 
-          {/* Title */}
           <div className="min-w-0 flex md:justify-start justify-center">
             <div
               className="truncate font-extrabold leading-none text-center md:text-left"
@@ -81,20 +101,17 @@ export default function SortableCard({
               {item.title || "title"}
             </div>
           </div>
-          
-          {/* Date left */}
+
           <div className="justify-self-end">
             <DateLeftCountdown initialDays={item.date_left} colorHex={mainColor} />
           </div>
         </div>
-        
 
         {/* Body */}
         <div className="mt-6 md:mt-8 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
-          {/* Queue number (desktop) */}
           <div className="hidden md:flex md:col-span-2 md:items-center justify-center">
             <div
-              className="text-[52px] lg:text-[60px] leading-none font-extrabold select-none text-transparent bg-clip-text"
+              className="text-[52px] lg:text-[60px] leading-none font-extrabold select-none"
               style={{ color: QUEUE_NUMBER_PURPLE }}
               title="Drag to reorder"
             >
@@ -102,47 +119,36 @@ export default function SortableCard({
             </div>
           </div>
 
-          
-          {/* Info */}
           <div className="md:col-span-5 space-y-2 sm:space-y-3 text-[#4A5568]">
-
-            {/* Progress (แบบเดียวกับภาพ: หลอดบาง โค้งมน + จุดหมุด) */}
             <div className="mb-10">
               <div className="text-[11px] sm:text-xs text-gray-500">ความคืบหน้า</div>
               <div className="text-sm sm:text-base font-semibold">
                 <span className="text-[#6C63FF]">{percent}%</span>
                 <span className="text-gray-500 ml-2">ดำเนินการแล้ว</span>
               </div>
-
               <div className="mt-2 relative h-2.5 rounded-full bg-gray-200 overflow-hidden">
-              {/* fill */}
-              <div
-                className={`h-full rounded-full transition-[width] duration-300 ${barColorClass}`}
-                style={{ width: `${percent}%` }}
-              />
-              {/* milestone dots: 25 / 50 / 75 */}
-              {[25, 50, 75].map((m) => (
-                <span
-                  key={m}
-                  className={`absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full ${
-                    percent >= m ? 'bg-white' : 'bg-gray-400'
-                  }`}
-                  style={{ left: `calc(${m}% - 3px)` }}
+                <div
+                  className={`h-full rounded-full transition-[width] duration-300 ${barColorClass}`}
+                  style={{ width: `${percent}%` }}
                 />
-              ))}
-            </div>
+                {[25, 50, 75].map((m) => (
+                  <span
+                    key={m}
+                    className={`absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full ${
+                      percent >= m ? "bg-white" : "bg-gray-400"
+                    }`}
+                    style={{ left: `calc(${m}% - 3px)` }}
+                  />
+                ))}
+              </div>
             </div>
 
-            {/* รายการข้อมูล */}
-            {/* <Line icon="/Priority.png" label="Priority" value={item.priority ?? '-'} /> */}
-            <Line icon="/Staff ID.png" label="รหัสประจำตัวเจ้าหน้าที่" value={item.staff_id ?? '-'} />
+            <Line icon="/Staff ID.png" label="รหัสประจำตัวเจ้าหน้าที่" value={item.staff_id ?? "-"} />
             <Line icon="/Faculty.png" label="คณะ" value={facultyNameTH} labelPad="ml-7 sm:ml-11" />
-            <Line icon="/Staff Status.png" label="สถานะเจ้าหน้าที่" value={item.staff_status?.status ?? '-'} labelPad="ml-3" />
-            <Line icon="/User Status.png" label="สถานะ ผู้ใช้" value={item.user_status?.status ?? '-'} labelPad="ml-10" />
+            <Line icon="/Staff Status.png" label="สถานะเจ้าหน้าที่" value={item.staff_status?.status ?? "-"} labelPad="ml-3" />
+            <Line icon="/User Status.png" label="สถานะ ผู้ใช้" value={item.user_status?.status ?? "-"} labelPad="ml-10" />
           </div>
 
-
-          {/* Notes */}
           <div className="md:col-span-4 w-full">
             {item.note ? (
               <div className="rounded-2xl overflow-hidden bg-white shadow border border-black/5">
@@ -154,36 +160,42 @@ export default function SortableCard({
                   {item.note}
                 </div>
               </div>
-            ) : (
-              <div />
-            )}
+            ) : <div />}
           </div>
         </div>
 
         {/* Edit button */}
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onEdit(); }}
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 z-20 cursor-pointer rounded-full p-2 hover:bg-black/5 transition"
-          title="Edit"
-          aria-label="Edit card"
-        >
-          <Image src="/pencil.png" alt="Edit" width={18} height={18} className="w-[18px] h-[18px] pointer-events-none" />
-        </button>
+        {canDrag && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 z-20 cursor-pointer rounded-full p-2 hover:bg-black/5 transition"
+            title="Edit"
+            aria-label="Edit card"
+          >
+            <Image
+              src="/pencil.png"
+              alt="Edit"
+              width={18}
+              height={18}
+              className="w-[18px] h-[18px] pointer-events-none"
+            />
+          </button>
+        )}
 
-        {/* background tint */}
-        <div className="pointer-events-none absolute inset-0 rounded-[22px] sm:rounded-[28px] -z-10" style={{ background: containerBgTint }} />
+        <div
+          className="pointer-events-none absolute inset-0 rounded-[22px] sm:rounded-[28px] -z-10"
+          style={{ background: containerBgTint }}
+        />
       </div>
     </li>
   );
 }
 
-function Line({
-  icon, label, value, labelPad,
-}: { icon: string; label: string; value: React.ReactNode; labelPad?: string }) {
+function Line({ icon, label, value, labelPad }: { icon: string; label: string; value: React.ReactNode; labelPad?: string }) {
   return (
     <div className="flex items-center gap-2 text-sm sm:text-base">
       <Image src={icon} alt={label} width={16} height={16} className="w-4 h-4" />

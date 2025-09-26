@@ -173,11 +173,7 @@ export default function QueueModal(props: Props) {
           {/* Appointment */}
           <DateInput label="วันที่นัดหมาย" value={appointmentDateAw} onChange={setAppointmentDateAw} inputBase={inputBase} />
 
-          {/* Date left */}
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">เหลือเวลา (วัน)</span>
-            <input type="number" min={0} className={inputBase} value={dateLeft} onChange={(e) => setDateLeft(Number(e.target.value))} />
-          </label>
+      
 
           {/* Orders */}
           {orderMappings?.length > 0 && (
