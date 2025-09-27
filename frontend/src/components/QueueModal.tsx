@@ -1,27 +1,41 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { CourseStatus, FacultyItem, OrderMapping, StaffStatus } from "../types/queue";
-import { toDatetimeLocal } from "@/lib/ui";
+import { CourseStatus, StaffStatus } from "@/types/api/status";
+import { FacultyItem } from "@/types/api/faculty";
+import { OrderMapping } from "@/types/api/order";
 
 type Props = {
   isOpen: boolean;
   editMode: boolean;
 
-  title: string; setTitle: (v: string) => void;
-  faculty: string; setFaculty: (v: string) => void;
-  staffId: string; setStaffId: (v: string) => void;
-  staffStatusId: string; setStaffStatusId: (v: string) => void;
-  courseStatusId: string; setCourseStatusId: (v: string) => void;
+  title: string;
+  setTitle: (v: string) => void;
+  faculty: string;
+  setFaculty: (v: string) => void;
+  staffId: string;
+  setStaffId: (v: string) => void;
+  staffStatusId: string;
+  setStaffStatusId: (v: string) => void;
+  courseStatusId: string;
+  setCourseStatusId: (v: string) => void;
 
-  wordfileSubmit: string; setWordfileSubmit: (v: string) => void;
-  infoSubmit: string; setInfoSubmit: (v: string) => void;
-  infoSubmit14days: string; setInfoSubmit14days: (v: string) => void;
-  timeRegister: string; setTimeRegister: (v: string) => void;
-  onWeb: string; setOnWeb: (v: string) => void;
-  appointmentDateAw: string; setAppointmentDateAw: (v: string) => void;
+  wordfileSubmit: string;
+  setWordfileSubmit: (v: string) => void;
+  infoSubmit: string;
+  setInfoSubmit: (v: string) => void;
+  infoSubmit14days: string;
+  setInfoSubmit14days: (v: string) => void;
+  timeRegister: string;
+  setTimeRegister: (v: string) => void;
+  onWeb: string;
+  setOnWeb: (v: string) => void;
+  appointmentDateAw: string;
+  setAppointmentDateAw: (v: string) => void;
 
-  dateLeft: number; setDateLeft: (v: number) => void;
-  note: string; setNote: (v: string) => void;
+  dateLeft: number;
+  setDateLeft: (v: number) => void;
+  note: string;
+  setNote: (v: string) => void;
 
   facultyList: FacultyItem[];
   courseStatusList: CourseStatus[];
@@ -33,43 +47,71 @@ type Props = {
   orderMappings: OrderMapping[];
   setOrderMappings: React.Dispatch<React.SetStateAction<OrderMapping[]>>;
   currentId: number | null;
-  onToggleOrder: (listQueueId: number, orderId: number, checked: boolean) => Promise<void>;
+  onToggleOrder: (
+    listQueueId: number,
+    orderId: number,
+    checked: boolean
+  ) => Promise<void>;
   token: string;
 
   /** ✅ ใหม่: แจ้ง parent เมื่อจำนวนงาน/งานที่เสร็จเปลี่ยน */
-  onOrdersChanged?: (listQueueId: number, summary: { done: number; total: number }) => void;
+  onOrdersChanged?: (
+    listQueueId: number,
+    summary: { done: number; total: number }
+  ) => void;
 };
 
 export default function QueueModal(props: Props) {
   const {
-    isOpen, editMode,
-    title, setTitle,
-    faculty, setFaculty,
-    staffId, setStaffId,
-    staffStatusId, setStaffStatusId,
-    courseStatusId, setCourseStatusId,
-    wordfileSubmit, setWordfileSubmit,
-    infoSubmit, setInfoSubmit,
-    infoSubmit14days, setInfoSubmit14days,
-    timeRegister, setTimeRegister,
-    onWeb, setOnWeb,
-    appointmentDateAw, setAppointmentDateAw,
-    dateLeft, setDateLeft,
-    note, setNote,
-    facultyList, courseStatusList, staffStatusList,
-    onSubmit, onClose,
-    orderMappings, setOrderMappings, currentId, onToggleOrder, token,
+    isOpen,
+    editMode,
+    title,
+    setTitle,
+    faculty,
+    setFaculty,
+    staffId,
+    setStaffId,
+    staffStatusId,
+    setStaffStatusId,
+    courseStatusId,
+    setCourseStatusId,
+    wordfileSubmit,
+    setWordfileSubmit,
+    infoSubmit,
+    setInfoSubmit,
+    infoSubmit14days,
+    setInfoSubmit14days,
+    timeRegister,
+    setTimeRegister,
+    onWeb,
+    setOnWeb,
+    appointmentDateAw,
+    setAppointmentDateAw,
+    dateLeft,
+    setDateLeft,
+    note,
+    setNote,
+    facultyList,
+    courseStatusList,
+    staffStatusList,
+    onSubmit,
+    onClose,
+    orderMappings,
+    setOrderMappings,
+    currentId,
+    onToggleOrder,
+    token,
     onOrdersChanged,
   } = props;
 
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [newOrderTitle, setNewOrderTitle] = useState("");
-  const [orderView, setOrderView] = useState<'all' | 'done'>('all');
+  const [orderView, setOrderView] = useState<"all" | "done">("all");
 
   // สรุปจำนวนงานเสร็จ/ทั้งหมด
   function summarize(oms: OrderMapping[]) {
     const total = oms.length;
-    const done  = oms.filter(o => o.checked).length;
+    const done = oms.filter((o) => o.checked).length;
     return { done, total };
   }
 
@@ -93,8 +135,10 @@ export default function QueueModal(props: Props) {
 
   // ค่า progress สำหรับ header การ์ดสรุป (ถ้าจะโชว์)
   const totalOrders = orderMappings.length;
-  const doneOrders  = orderMappings.filter(o => o.checked).length;
-  const percent     = totalOrders ? Math.round((doneOrders / totalOrders) * 100) : 0;
+  const doneOrders = orderMappings.filter((o) => o.checked).length;
+  const percent = totalOrders
+    ? Math.round((doneOrders / totalOrders) * 100)
+    : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm p-4">
@@ -104,21 +148,35 @@ export default function QueueModal(props: Props) {
         </h3>
 
         <form
-          onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit();
+          }}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"
         >
           {/* Title ชื่อเรื่อง */}
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold">ชื่อเรื่อง</span>
-            <input type="text" className={inputBase} value={title} onChange={(e) => setTitle(e.target.value)} required />
+            <input
+              type="text"
+              className={inputBase}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
           </label>
 
           {/* Faculty คณะ */}
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold">คณะ</span>
-            <select className={selectBase} value={faculty} onChange={(e) => setFaculty(e.target.value)} required>
-              {/*<option value="">-- Select Faculty --</option>*/}
-              *<option value="">-- เลือกคณะ --</option>*
+            <select
+              className={selectBase}
+              value={faculty}
+              onChange={(e) => setFaculty(e.target.value)}
+              required
+            >
+              {/*<option value="">-- Select Faculty --</option>*/}*
+              <option value="">-- เลือกคณะ --</option>*
               {facultyList.map((fac) => (
                 <option key={fac.id} value={String(fac.id)}>
                   {fac.nameTH} ({fac.code})
@@ -129,17 +187,32 @@ export default function QueueModal(props: Props) {
 
           {/* Staff ID รหัสเจ้าหน้าที่*/}
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">รหัสประจำตัวเจ้าหน้าที่</span>
-            <input type="number" className={inputBase} value={staffId} onChange={(e) => setStaffId(e.target.value)} required />
+            <span className="text-sm font-semibold">
+              รหัสประจำตัวเจ้าหน้าที่
+            </span>
+            <input
+              type="number"
+              className={inputBase}
+              value={staffId}
+              onChange={(e) => setStaffId(e.target.value)}
+              required
+            />
           </label>
 
           {/* Staff Status สถานะเจ้าหน้าที่ */}
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold">สถานะเจ้าหน้าที่</span>
-            <select className={selectBase} value={staffStatusId} onChange={(e) => setStaffStatusId(e.target.value)} required>
+            <select
+              className={selectBase}
+              value={staffStatusId}
+              onChange={(e) => setStaffStatusId(e.target.value)}
+              required
+            >
               <option value="">-- Select Status --</option>
               {staffStatusList.map((s) => (
-                <option key={s.id} value={s.id}>{s.status}</option>
+                <option key={s.id} value={s.id}>
+                  {s.status}
+                </option>
               ))}
             </select>
           </label>
@@ -147,33 +220,67 @@ export default function QueueModal(props: Props) {
           {/* Course Status สถานะรายวิชา */}
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold">สถานะรายวิชา</span>
-            <select className={selectBase} value={courseStatusId} onChange={(e) => setCourseStatusId(e.target.value)}>
+            <select
+              className={selectBase}
+              value={courseStatusId}
+              onChange={(e) => setCourseStatusId(e.target.value)}
+            >
               <option value="">-- เลือก สถานะรายวิชา --</option>
               {courseStatusList.map((c) => (
-                <option key={c.id} value={c.id}>{c.status}</option>
+                <option key={c.id} value={c.id}>
+                  {c.status}
+                </option>
               ))}
             </select>
           </label>
 
           {/* Wordfile submit */}
-          <DateInput label="วันที่ได้รับไฟล์ Word" value={wordfileSubmit} onChange={setWordfileSubmit} inputBase={inputBase} />
+          <DateInput
+            label="วันที่ได้รับไฟล์ Word"
+            value={wordfileSubmit}
+            onChange={setWordfileSubmit}
+            inputBase={inputBase}
+          />
 
           {/* Info submit */}
-          <DateInput label="วันที่ได้รับบันทึกข้อความ" value={infoSubmit} onChange={setInfoSubmit} inputBase={inputBase} />
+          <DateInput
+            label="วันที่ได้รับบันทึกข้อความ"
+            value={infoSubmit}
+            onChange={setInfoSubmit}
+            inputBase={inputBase}
+          />
 
           {/* Info submit 14 days */}
-          <DateInput label="กรอบเวลา 14 วัน" value={infoSubmit14days} onChange={setInfoSubmit14days} inputBase={inputBase} />
+          <DateInput
+            label="กรอบเวลา 14 วัน"
+            value={infoSubmit14days}
+            onChange={setInfoSubmit14days}
+            inputBase={inputBase}
+          />
 
           {/* Time register */}
-          <DateInput label="วันที่เปิดรับสมัคร" value={timeRegister} onChange={setTimeRegister} inputBase={inputBase} />
+          <DateInput
+            label="วันที่เปิดรับสมัคร"
+            value={timeRegister}
+            onChange={setTimeRegister}
+            inputBase={inputBase}
+          />
 
           {/* On web */}
-          <DateInput label="วันที่ต้องขึ้นเว็บ" value={onWeb} onChange={setOnWeb} inputBase={inputBase} />
+          <DateInput
+            label="วันที่ต้องขึ้นเว็บ"
+            value={onWeb}
+            onChange={setOnWeb}
+            inputBase={inputBase}
+          />
 
           {/* Appointment */}
-          <DateInput label="วันที่นัดหมาย" value={appointmentDateAw} onChange={setAppointmentDateAw} inputBase={inputBase} />
-
-      
+          <DateInput
+            label="วันที่นัดหมาย"
+            value={appointmentDateAw}
+            onChange={setAppointmentDateAw}
+            inputBase={inputBase}
+          />
 
           {/* Orders */}
           {orderMappings?.length > 0 && (
@@ -186,30 +293,48 @@ export default function QueueModal(props: Props) {
                 {/* ทั้งหมด */}
                 <button
                   type="button"
-                  onClick={() => setOrderView('all')}
+                  onClick={() => setOrderView("all")}
                   className={`flex items-center justify-between rounded-3xl px-4 py-4 shadow-sm border transition
-                    ${orderView === 'all' ? 'bg-purple-50 border-purple-200' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                    ${
+                      orderView === "all"
+                        ? "bg-purple-50 border-purple-200"
+                        : "bg-white border-gray-200 hover:bg-gray-50"
+                    }`}
                 >
                   <span className="flex items-center gap-2 text-sm">
-                    <img src="/queuecard/list.png" alt="list icon" className="h-5 w-5" />
+                    <img
+                      src="/queuecard/list.png"
+                      alt="list icon"
+                      className="h-5 w-5"
+                    />
                     ทั้งหมด
                   </span>
-                  <span className="text-base font-semibold">{orderMappings.length}</span>
+                  <span className="text-base font-semibold">
+                    {orderMappings.length}
+                  </span>
                 </button>
 
                 {/* เสร็จแล้ว */}
                 <button
                   type="button"
-                  onClick={() => setOrderView('done')}
+                  onClick={() => setOrderView("done")}
                   className={`flex items-center justify-between rounded-3xl px-4 py-4 shadow-sm border transition
-                    ${orderView === 'done' ? 'bg-purple-50 border-purple-200' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                    ${
+                      orderView === "done"
+                        ? "bg-purple-50 border-purple-200"
+                        : "bg-white border-gray-200 hover:bg-gray-50"
+                    }`}
                 >
                   <span className="flex items-center gap-2 text-sm">
-                    <img src="/queuecard/checked.png" alt="checked icon" className="h-5 w-5" />
+                    <img
+                      src="/queuecard/checked.png"
+                      alt="checked icon"
+                      className="h-5 w-5"
+                    />
                     เสร็จแล้ว
                   </span>
                   <span className="text-base font-semibold">
-                    {orderMappings.filter(o => o.checked).length}
+                    {orderMappings.filter((o) => o.checked).length}
                   </span>
                 </button>
               </div>
@@ -217,16 +342,24 @@ export default function QueueModal(props: Props) {
               {/* รายการงาน: all = แสดงงานค้าง / done = แสดงงานเสร็จ */}
               <div className="space-y-3">
                 {orderMappings
-                  .filter(o => (orderView === 'done' ? o.checked : !o.checked))
+                  .filter((o) =>
+                    orderView === "done" ? o.checked : !o.checked
+                  )
                   .map((om) => {
                     const id = `order-${String(om.id)}`;
                     const checked = !!om.checked;
                     return (
-                      <label key={id} htmlFor={id} className="flex items-center gap-3 cursor-pointer">
+                      <label
+                        key={id}
+                        htmlFor={id}
+                        className="flex items-center gap-3 cursor-pointer"
+                      >
                         {/* วงกลมแบบ radio-like */}
                         <span
                           className={`relative inline-flex h-5 w-5 items-center justify-center rounded-full border
-                            ${checked ? 'border-[#8741D9]' : 'border-gray-300'}`}
+                            ${
+                              checked ? "border-[#8741D9]" : "border-gray-300"
+                            }`}
                         >
                           <input
                             id={id}
@@ -234,24 +367,37 @@ export default function QueueModal(props: Props) {
                             checked={checked}
                             onChange={(e) => {
                               const isChecked = e.target.checked;
-                              setOrderMappings(prev => {
-                                const next = prev.map(o => (o.id === om.id ? { ...o, checked: isChecked } : o));
+                              setOrderMappings((prev) => {
+                                const next = prev.map((o) =>
+                                  o.id === om.id
+                                    ? { ...o, checked: isChecked }
+                                    : o
+                                );
                                 if (currentId && onOrdersChanged) {
                                   onOrdersChanged(currentId, summarize(next));
                                 }
                                 return next;
                               });
                               if (currentId && om.order?.id) {
-                                onToggleOrder(currentId, om.order.id, isChecked);
+                                onToggleOrder(
+                                  currentId,
+                                  om.order.id,
+                                  isChecked
+                                );
                               }
                             }}
                             className="absolute inset-0 opacity-0 cursor-pointer"
                             aria-describedby={`${id}-label`}
                           />
-                          {checked && <span className="h-2.5 w-2.5 rounded-full bg-[#8741D9]" />}
+                          {checked && (
+                            <span className="h-2.5 w-2.5 rounded-full bg-[#8741D9]" />
+                          )}
                         </span>
 
-                        <span id={`${id}-label`} className="text-sm text-gray-900">
+                        <span
+                          id={`${id}-label`}
+                          className="text-sm text-gray-900"
+                        >
                           {om.order?.title}
                         </span>
                       </label>
@@ -273,7 +419,9 @@ export default function QueueModal(props: Props) {
               {showAddOrder && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
                   <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-6">
-                    <h2 className="text-lg font-semibold mb-4">เตือนความจำใหม่</h2>
+                    <h2 className="text-lg font-semibold mb-4">
+                      เตือนความจำใหม่
+                    </h2>
                     <input
                       type="text"
                       value={newOrderTitle}
@@ -285,7 +433,10 @@ export default function QueueModal(props: Props) {
                       <button
                         type="button"
                         className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm font-semibold"
-                        onClick={() => { setShowAddOrder(false); setNewOrderTitle(""); }}
+                        onClick={() => {
+                          setShowAddOrder(false);
+                          setNewOrderTitle("");
+                        }}
                       >
                         ยกเลิก
                       </button>
@@ -295,19 +446,29 @@ export default function QueueModal(props: Props) {
                         onClick={async () => {
                           if (!newOrderTitle || !currentId) return;
                           try {
-                            const res = await fetch("http://localhost:8080/api/order", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                              credentials: "include",
-                              body: JSON.stringify({ list_queue_id: currentId, title: newOrderTitle }),
-                            });
+                            const res = await fetch(
+                              "http://localhost:8080/api/order",
+                              {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  Authorization: `Bearer ${token}`,
+                                },
+                                credentials: "include",
+                                body: JSON.stringify({
+                                  list_queue_id: currentId,
+                                  title: newOrderTitle,
+                                }),
+                              }
+                            );
                             if (!res.ok) throw new Error("Create order failed");
                             const newOrder = await res.json();
 
                             // ใช้ randomUUID ไม่ต้องพึ่ง uuid pkg
-                            const localId = typeof crypto?.randomUUID === "function"
-                              ? crypto.randomUUID()
-                              : `${Date.now()}-${Math.random()}`;
+                            const localId =
+                              typeof crypto?.randomUUID === "function"
+                                ? crypto.randomUUID()
+                                : `${Date.now()}-${Math.random()}`;
 
                             setOrderMappings((prev) => {
                               const next = [
@@ -316,7 +477,10 @@ export default function QueueModal(props: Props) {
                                   id: newOrder.mapping_id ?? localId,
                                   order_id: newOrder.id,
                                   checked: false,
-                                  order: { id: newOrder.id, title: newOrder.title },
+                                  order: {
+                                    id: newOrder.id,
+                                    title: newOrder.title,
+                                  },
                                 },
                               ];
                               if (currentId && onOrdersChanged) {
@@ -356,7 +520,11 @@ export default function QueueModal(props: Props) {
 
           {/* Buttons */}
           <div className="md:col-span-2 flex justify-end gap-3 sm:gap-4 mt-2 sm:mt-4">
-            <button type="button" className="px-5 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm font-semibold" onClick={onClose}>
+            <button
+              type="button"
+              className="px-5 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm font-semibold"
+              onClick={onClose}
+            >
               ยกเลิก
             </button>
             <button
@@ -373,8 +541,16 @@ export default function QueueModal(props: Props) {
 }
 
 function DateInput({
-  label, value, onChange, inputBase,
-}: { label: string; value: string; onChange: (v: string) => void; inputBase: string }) {
+  label,
+  value,
+  onChange,
+  inputBase,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  inputBase: string;
+}) {
   return (
     <label className="flex flex-col gap-1">
       <span className="text-sm font-semibold">{label}</span>

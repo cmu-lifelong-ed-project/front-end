@@ -39,7 +39,7 @@ export default function cmuEntraIDCallback() {
   }, [code]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-[#F8F4FF]">
       {!message ? (
         <Loader />
       ) : (

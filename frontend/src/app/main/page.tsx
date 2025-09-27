@@ -20,17 +20,22 @@ import SortableCard from "@/components/SortableCard";
 import QueueModal from "../../components/QueueModal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import SuccessOverlay from "@/components/ui/SuccessOverlay";
-import { ChevronDown, ChevronUp, X, Search as SearchIcon } from "lucide-react";
-import {
-  CardItem,
-  CourseStatus,
-  FacultyItem,
-  OrderMapping,
-  StaffStatus,
-  UserStatus,
-} from "../../types/queue";
+import { CardItem } from "@/types/api/queue";
+import { FacultyItem } from "@/types/api/faculty";
+import { OrderMapping } from "@/types/api/order";
+import { CourseStatus, StaffStatus } from "@/types/api/status";
 import { toDatetimeLocal } from "@/lib/ui";
 import { getCookie, clearCookie } from "@/lib/cookie";
+import {
+  getUnfinishedListQueues,
+  getMyFacultyListQueues,
+  getMyListQueues,
+  getListQueuesByCourseStatus,
+} from "@/lib/api/listqueue";
+import { getStaffStatuses } from "@/lib/api/staffStatus";
+import { getFaculties } from "@/lib/api/faculty";
+import { getCourseStatuses } from "@/lib/api/courseStatus";
+import { getUser } from "@/lib/api/user";
 
 const notoSansThai = Noto_Sans_Thai({
   weight: ["300", "400", "500", "600", "700"],
@@ -61,18 +66,20 @@ export default function QueuePage() {
   const [token, setToken] = useState("");
 
   const [staffStatusList, setStaffStatusList] = useState<StaffStatus[]>([]);
-  const [userStatusList, setUserStatusList] = useState<UserStatus[]>([]);
   const [facultyList, setFacultyList] = useState<FacultyItem[]>([]);
   const [courseStatusList, setCourseStatusList] = useState<CourseStatus[]>([]);
 
-  const [showSuccess, setShowSuccess] = useState<null | { mode: "create" | "edit" }>(null);
+  const [showSuccess, setShowSuccess] = useState<null | {
+    mode: "create" | "edit";
+  }>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const [orderMappings, setOrderMappings] = useState<OrderMapping[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [userRole, setUserRole] = useState<string>("");
-  const [progressMap, setProgressMap] =
-    useState<Record<number, { done: number; total: number }>>({});
+  const [progressMap, setProgressMap] = useState<
+    Record<number, { done: number; total: number }>
+  >({});
 
   // เพิ่ม state สำหรับค้นหา title
   const [searchTitle, setSearchTitle] = useState("");
@@ -99,86 +106,71 @@ export default function QueuePage() {
     return () => el.removeEventListener("click", handler);
   }, []);
 
-  // fetch data with role-based API
   useEffect(() => {
     const t = getCookie("backend-api-token");
-    if (!t) return;
     setToken(t);
+  }, []);
 
-    async function fetchData() {
+  useEffect(() => {
+    if (!token) return;
+
+    let cancelled = false;
+    (async () => {
       try {
-        // 1. ดึง role จาก user/me
-        const userRes = await fetch("http://localhost:8080/api/user/me", {
-          headers: { Authorization: `Bearer ${t}` },
-          credentials: "include",
-        });
-        
-        const userData = await userRes.json();
-        const role = userData?.role;
-         setUserRole(role);
+        // 1) role
+        const user = await getUser(token);
+        if (cancelled) return;
+        const role: string = user?.role;
+        setUserRole(role);
 
-        let listQueueUrl = "";
-          
-        // 2. เลือก API ตาม role
+        // 2) listqueue ตาม role
+        let listQueue: CardItem[] = [];
         if (role === "user") {
-          listQueueUrl = "http://localhost:8080/api/listqueue/owner";
+          listQueue = await getMyListQueues(token);
         } else if (role === "officer") {
-          listQueueUrl = "http://localhost:8080/api/listqueue/faculty";
+          listQueue = await getMyFacultyListQueues(token);
         } else {
-          listQueueUrl = "http://localhost:8080/api/listqueue"; // admin, staff, LE
+          listQueue = await getUnfinishedListQueues(token); // admin, staff, LE
         }
+        if (cancelled) return;
 
-        // 3. โหลด queue
-        const queueRes = await fetch(listQueueUrl, {
-          headers: { Authorization: `Bearer ${t}` },
-          credentials: "include",
-        });
-        const queueData = await queueRes.json();
-        const sorted = (queueData || []).sort(
-          (a: CardItem, b: CardItem) => a.priority - b.priority
+        const sorted = [...(listQueue || [])].sort(
+          (a, b) => a.priority - b.priority
         );
         setCards(sorted);
 
-        // 4. คำนวณ progress
+        // 3) progress
         const map: Record<number, { done: number; total: number }> = {};
-        sorted.forEach((c: CardItem) => {
-          const { done, total } = summarizeMappings((c as any).order_mappings || []);
+        sorted.forEach((c) => {
+          const { done, total } = summarizeMappings(c.order_mappings ?? []);
           map[c.id] = { done, total };
         });
         setProgressMap(map);
 
-        // 5. โหลดข้อมูลอื่น ๆ
-        const [staffS, userS, fac, course] = await Promise.all([
-          fetch("http://localhost:8080/api/staffstatus", {
-            headers: { Authorization: `Bearer ${t}` },
-            credentials: "include",
-          }).then((r) => r.json()),
-          fetch("http://localhost:8080/api/userstatus", {
-            headers: { Authorization: `Bearer ${t}` },
-            credentials: "include",
-          }).then((r) => r.json()),
-          fetch("http://localhost:8080/api/faculty", {
-            headers: { Authorization: `Bearer ${t}` },
-            credentials: "include",
-          }).then((r) => r.json()),
-          fetch("http://localhost:8080/api/course/status", {
-            headers: { Authorization: `Bearer ${t}` },
-            credentials: "include",
-          }).then((r) => r.json()),
-        ]);
-
-        setStaffStatusList(staffS);
-        setUserStatusList(userS);
-        setFacultyList(Array.isArray(fac) ? fac : fac.data ?? []);
-        setCourseStatusList(Array.isArray(course) ? course : course.data ?? []);
+        // 4) โหลดข้อมูลเฉพาะ role
+        if (role === "admin" || role === "staff") {
+          const [staffS, facultyS, courseS] = await Promise.all([
+            getStaffStatuses(token),
+            getFaculties(token),
+            getCourseStatuses(token),
+          ]);
+          if (cancelled) return;
+          setStaffStatusList(staffS);
+          setFacultyList(facultyS);
+          setCourseStatusList(courseS);
+        }
       } catch (err) {
-        console.error(err);
-        alert("โหลดข้อมูลล้มเหลว");
+        if (!cancelled) {
+          console.error(err);
+          alert("โหลดข้อมูลล้มเหลว");
+        }
       }
-    }
+    })();
 
-    fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   function handleSubmitQueue() {
     if (!token) {
@@ -225,10 +217,12 @@ export default function QueuePage() {
     })
       .then(async (res) => {
         if (!res.ok)
-          throw new Error(`${method} failed: ${res.status} - ${await res.text()}`);
+          throw new Error(
+            `${method} failed: ${res.status} - ${await res.text()}`
+          );
         return res.json();
       })
-      .then(async (updatedItem) => {
+      .then(async (updatedItem: CardItem) => {
         setShowSuccess({ mode: editMode ? "edit" : "create" });
         setShowModal(false);
         resetForm();
@@ -253,7 +247,7 @@ export default function QueuePage() {
           setCards((prev) => [...prev, updatedItem]);
         }
 
-        const summary = summarizeMappings((updatedItem as any).order_mappings || []);
+        const summary = summarizeMappings(updatedItem.order_mappings || []);
         setProgressMap((prev) => ({ ...prev, [updatedItem.id]: summary }));
       })
       .catch((err) => alert(err.message));
@@ -286,17 +280,25 @@ export default function QueuePage() {
     setFaculty(item.faculty);
     setStaffId(String(item.staff_id));
     setStaffStatusId(String(item.staff_status.id));
-    setCourseStatusId(item.course_status_id ? String(item.course_status_id) : "");
+    setCourseStatusId(
+      item.course_status_id ? String(item.course_status_id) : ""
+    );
     setNote(item.note || "");
-    setWordfileSubmit(item.wordfile_submit ? item.wordfile_submit.substring(0, 16) : "");
+    setWordfileSubmit(
+      item.wordfile_submit ? item.wordfile_submit.substring(0, 16) : ""
+    );
     setInfoSubmit(item.info_submit ? item.info_submit.substring(0, 16) : "");
-    setInfoSubmit14days(item.info_submit_14days ? item.info_submit_14days.substring(0, 16) : "");
-    setTimeRegister(item.time_register ? item.time_register.substring(0, 16) : "");
+    setInfoSubmit14days(
+      item.info_submit_14days ? item.info_submit_14days.substring(0, 16) : ""
+    );
+    setTimeRegister(
+      item.time_register ? item.time_register.substring(0, 16) : ""
+    );
     setDateLeft(item.date_left ?? 0);
     setOnWeb(item.on_web ? item.on_web.substring(0, 16) : "");
     setAppointmentDateAw(toDatetimeLocal(item.appointment_date_aw));
     setShowModal(true);
-    setOrderMappings((item as any).order_mappings || []);
+    setOrderMappings(item.order_mappings || []);
     setCurrentId(item.id);
   }
 
@@ -327,9 +329,14 @@ export default function QueuePage() {
         }),
       })
         .then((res) => {
-          if (!res.ok) throw new Error(`Failed to update priority ${card.id}: ${res.status}`);
+          if (!res.ok)
+            throw new Error(
+              `Failed to update priority ${card.id}: ${res.status}`
+            );
         })
-        .catch((err) => console.error(`Failed to update priority ${card.id}`, err));
+        .catch((err) =>
+          console.error(`Failed to update priority ${card.id}`, err)
+        );
     });
   }
 
@@ -364,10 +371,18 @@ export default function QueuePage() {
     window.location.href = "/login";
   }
 
- 
   const filteredCards = cards.filter((c) =>
     c.title.toLowerCase().includes(searchTitle.toLowerCase())
   );
+
+  async function filterByCourseStatus(ids: number[]) {
+    if (!token) return;
+    const listqueue =
+      ids.length === 0
+        ? await getUnfinishedListQueues(token)
+        : await getListQueuesByCourseStatus(ids, token);
+    setCards((listqueue || []).sort((a, b) => a.priority - b.priority));
+  }
 
   return (
     <div className={`${notoSansThai.className} bg-[#F8F4FF] min-h-screen`}>
@@ -376,8 +391,8 @@ export default function QueuePage() {
           <h2 className="text-2xl sm:text-3xl font-bold text-[#8741D9]">
             รายการคิว
           </h2>
-          <div className="flex items-center gap-3">
-            {userRole !== "LE" && userRole !== "officer" && userRole !== "user" && (
+          {(userRole === "admin" || userRole === "staff") && (
+            <div className="flex items-center gap-3">
               <button
                 className="self-start sm:self-auto bg-[#34C759] text-white px-5 sm:px-3 py-2.5 sm:py-2 rounded-full shadow-md hover:bg-[#28A745] focus:outline-none"
                 onClick={() => {
@@ -387,22 +402,19 @@ export default function QueuePage() {
               >
                 + สร้างรายการคิว
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-      
-
         <div className="mt-6 mb-8 flex items-center gap-4">
-            <FilterDropdown
-              items={courseStatusList}
-              label="สถานะรายวิชา"
-              onChange={(selected) => setCourseStatusId(selected.join(","))} 
-              onSearch={(q) => setSearchTitle(q)} 
-            />
-
-          </div>
-
+          <FilterDropdown
+            items={courseStatusList}
+            onChange={(ids) => filterByCourseStatus(ids)}
+            label="สถานะรายวิชา"
+            // onChange={(selected) => setCourseStatusId(selected.join(","))}
+            onSearch={(q) => setSearchTitle(q)}
+          />
+        </div>
 
         <QueueModal
           isOpen={showModal}
@@ -451,7 +463,11 @@ export default function QueuePage() {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragEnd={userRole === "admin" || userRole === "staff" ? handleDragEnd : undefined}
+          onDragEnd={
+            userRole === "admin" || userRole === "staff"
+              ? handleDragEnd
+              : undefined
+          }
         >
           <SortableContext
             items={filteredCards.map((card) => card.id)}
@@ -477,7 +493,6 @@ export default function QueuePage() {
             </ul>
           </SortableContext>
         </DndContext>
-
       </div>
 
       {showSuccess && (

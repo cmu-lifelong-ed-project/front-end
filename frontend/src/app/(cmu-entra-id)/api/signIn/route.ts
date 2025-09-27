@@ -2,7 +2,7 @@ import axios from "axios";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { NextRequest, NextResponse } from "next/server";
-import { CmuEntraIDBasicInfo } from "@/app/types/CmuEntraIDBasicInfo";
+import { CmuEntraIDBasicInfo } from "@/types/auth/CmuEntraIDBasicInfo";
 
 type SuccessResponse = { ok: true };
 type ErrorResponse = { ok: false; message: string };
@@ -108,76 +108,81 @@ export async function POST(req: NextRequest) {
     );
 
     // POST user data ไป backend api
-   const backendUrl = process.env.BACKEND_URL || "http://localhost:8080";
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:8080";
 
-        let backendToken: string | null = null;
-        try {
-          const res = await axios.post(`${backendUrl}/api/auth`, {
-            cmuitaccount_name: cmuBasicInfo.cmuitaccount_name,
-            cmuitaccount: cmuBasicInfo.cmuitaccount,
-            student_id: cmuBasicInfo.student_id,
-            prename_id: cmuBasicInfo.prename_id,
-            prename_TH: cmuBasicInfo.prename_TH,
-            prename_EN: cmuBasicInfo.prename_EN,
-            firstname_TH: cmuBasicInfo.firstname_TH,
-            firstname_EN: cmuBasicInfo.firstname_EN,
-            lastname_TH: cmuBasicInfo.lastname_TH,
-            lastname_EN: cmuBasicInfo.lastname_EN,
-            organization_code: cmuBasicInfo.organization_code,
-            organization_name_TH: cmuBasicInfo.organization_name_TH,
-            organization_name_EN: cmuBasicInfo.organization_name_EN,
-            itaccounttype_id: cmuBasicInfo.itaccounttype_id,
-            itaccounttype_TH: cmuBasicInfo.itaccounttype_TH,
-            itaccounttype_EN: cmuBasicInfo.itaccounttype_EN,
-          });
+    let backendToken: string | null = null;
+    try {
+      const res = await axios.post(`${backendUrl}/api/auth`, {
+        cmuitaccount_name: cmuBasicInfo.cmuitaccount_name,
+        cmuitaccount: cmuBasicInfo.cmuitaccount,
+        student_id: cmuBasicInfo.student_id,
+        prename_id: cmuBasicInfo.prename_id,
+        prename_TH: cmuBasicInfo.prename_TH,
+        prename_EN: cmuBasicInfo.prename_EN,
+        firstname_TH: cmuBasicInfo.firstname_TH,
+        firstname_EN: cmuBasicInfo.firstname_EN,
+        lastname_TH: cmuBasicInfo.lastname_TH,
+        lastname_EN: cmuBasicInfo.lastname_EN,
+        organization_code: cmuBasicInfo.organization_code,
+        organization_name_TH: cmuBasicInfo.organization_name_TH,
+        organization_name_EN: cmuBasicInfo.organization_name_EN,
+        itaccounttype_id: cmuBasicInfo.itaccounttype_id,
+        itaccounttype_TH: cmuBasicInfo.itaccounttype_TH,
+        itaccounttype_EN: cmuBasicInfo.itaccounttype_EN,
+      });
 
-          // สมมติ backend ตอบกลับ { token: "..." }
-          backendToken = res.data.token;
-        } catch (error) {
-          if (axios.isAxiosError(error)) {
-            console.error("Axios error response:", error.response?.data);
-            return NextResponse.json(
-              { ok: false, message: "Failed to save user to backend: " + JSON.stringify(error.response?.data) },
-              { status: error.response?.status || 500 }
-            );
-          } else {
-            console.error("Unexpected error:", error);
-            return NextResponse.json(
-              { ok: false, message: "Unexpected error saving user to backend" },
-              { status: 500 }
-            );
-          }
-        }
+      // สมมติ backend ตอบกลับ { token: "..." }
+      backendToken = res.data.token;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error("Axios error response:", error.response?.data);
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "Failed to save user to backend: " +
+              JSON.stringify(error.response?.data),
+          },
+          { status: error.response?.status || 500 }
+        );
+      } else {
+        console.error("Unexpected error:", error);
+        return NextResponse.json(
+          { ok: false, message: "Unexpected error saving user to backend" },
+          { status: 500 }
+        );
+      }
+    }
 
-        if (!backendToken) {
-          return NextResponse.json(
-            { ok: false, message: "No token received from backend" },
-            { status: 500 }
-          );
-        }
+    if (!backendToken) {
+      return NextResponse.json(
+        { ok: false, message: "No token received from backend" },
+        { status: 500 }
+      );
+    }
 
-        // เซ็ต cookie สำหรับ token ที่คุณสร้างเอง
-        const cookieStore = await cookies();
-          cookieStore.set({
-            name: "cmu-entraid-example-token",
-            value: token,
-            expires: new Date(Date.now() + 3600 * 1000),
-            httpOnly: true,
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
-            path: "/",
-          });
+    // เซ็ต cookie สำหรับ token ที่คุณสร้างเอง
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: "cmu-entraid-example-token",
+      value: token,
+      expires: new Date(Date.now() + 3600 * 1000),
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
 
-          // เซ็ต cookie สำหรับ token ที่ได้จาก backend
-          cookieStore.set({
-            name: "backend-api-token",
-            value: backendToken,
-            expires: new Date(Date.now() + 3600 * 1000),
-            httpOnly: false,
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
-            path: "/",
-          });
+    // เซ็ต cookie สำหรับ token ที่ได้จาก backend
+    cookieStore.set({
+      name: "backend-api-token",
+      value: backendToken,
+      expires: new Date(Date.now() + 3600 * 1000),
+      httpOnly: false,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

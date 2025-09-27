@@ -4,7 +4,9 @@ import Image from "next/image";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import DateLeftCountdown from "./DateLeftCountdown";
-import { CardItem, CourseStatus, FacultyItem } from "../types/queue";
+import { CardItem } from "@/types/api/queue";
+import { CourseStatus } from "@/types/api/status";
+import { FacultyItem } from "@/types/api/faculty";
 import {
   getStatusColorByName,
   hexToRgba,
@@ -35,14 +37,18 @@ export default function SortableCard({
 }: SortableCardProps) {
   const percent = Math.max(
     0,
-    Math.min(100, progressTotal > 0 ? Math.round((progressDone / progressTotal) * 100) : 0)
+    Math.min(
+      100,
+      progressTotal > 0 ? Math.round((progressDone / progressTotal) * 100) : 0
+    )
   );
 
   // ใช้ canDrag เพื่อเปิด/ปิด drag
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: item.id,
-    disabled: !canDrag,
-  });
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({
+      id: item.id,
+      disabled: !canDrag,
+    });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -50,9 +56,11 @@ export default function SortableCard({
   } as React.CSSProperties;
 
   const facultyNameTH =
-    facultyList.find((f) => String(f.id) === String(item.faculty))?.nameTH || "Unknown Faculty";
+    facultyList.find((f) => String(f.id) === String(item.faculty))?.nameTH ||
+    "Unknown Faculty";
   const courseStatusName =
-    courseStatusList.find((c) => c.id === item.course_status_id)?.status || "Not Started";
+    courseStatusList.find((c) => c.id === item.course_status_id)?.status ||
+    "Not Started";
 
   const mainColor = getStatusColorByName(courseStatusName);
   const containerBgTint = hexToRgba(mainColor, 0.08);
@@ -96,14 +104,21 @@ export default function SortableCard({
           <div className="min-w-0 flex md:justify-start justify-center">
             <div
               className="truncate font-extrabold leading-none text-center md:text-left"
-              style={{ color: QUEUE_NUMBER_PURPLE, fontSize: "24px", letterSpacing: "0.02em" }}
+              style={{
+                color: QUEUE_NUMBER_PURPLE,
+                fontSize: "24px",
+                letterSpacing: "0.02em",
+              }}
             >
               {item.title || "title"}
             </div>
           </div>
 
           <div className="justify-self-end">
-            <DateLeftCountdown initialDays={item.date_left} colorHex={mainColor} />
+            <DateLeftCountdown
+              initialDays={item.date_left}
+              colorHex={mainColor}
+            />
           </div>
         </div>
 
@@ -121,7 +136,9 @@ export default function SortableCard({
 
           <div className="md:col-span-5 space-y-2 sm:space-y-3 text-[#4A5568]">
             <div className="mb-10">
-              <div className="text-[11px] sm:text-xs text-gray-500">ความคืบหน้า</div>
+              <div className="text-[11px] sm:text-xs text-gray-500">
+                ความคืบหน้า
+              </div>
               <div className="text-sm sm:text-base font-semibold">
                 <span className="text-[#6C63FF]">{percent}%</span>
                 <span className="text-gray-500 ml-2">ดำเนินการแล้ว</span>
@@ -143,10 +160,29 @@ export default function SortableCard({
               </div>
             </div>
 
-            <Line icon="/Staff ID.png" label="รหัสประจำตัวเจ้าหน้าที่" value={item.staff_id ?? "-"} />
-            <Line icon="/Faculty.png" label="คณะ" value={facultyNameTH} labelPad="ml-7 sm:ml-11" />
-            <Line icon="/Staff Status.png" label="สถานะเจ้าหน้าที่" value={item.staff_status?.status ?? "-"} labelPad="ml-3" />
-            <Line icon="/User Status.png" label="สถานะ ผู้ใช้" value={item.user_status?.status ?? "-"} labelPad="ml-10" />
+            <Line
+              icon="/Staff ID.png"
+              label="รหัสประจำตัวเจ้าหน้าที่"
+              value={item.staff_id ?? "-"}
+            />
+            <Line
+              icon="/Faculty.png"
+              label="คณะ"
+              value={facultyNameTH}
+              labelPad="ml-7 sm:ml-11"
+            />
+            <Line
+              icon="/Staff Status.png"
+              label="สถานะเจ้าหน้าที่"
+              value={item.staff_status?.status ?? "-"}
+              labelPad="ml-3"
+            />
+            <Line
+              icon="/User Status.png"
+              label="สถานะ ผู้ใช้"
+              value={item.user_status?.status ?? "-"}
+              labelPad="ml-10"
+            />
           </div>
 
           <div className="md:col-span-4 w-full">
@@ -160,7 +196,9 @@ export default function SortableCard({
                   {item.note}
                 </div>
               </div>
-            ) : <div />}
+            ) : (
+              <div />
+            )}
           </div>
         </div>
 
@@ -168,7 +206,10 @@ export default function SortableCard({
         {canDrag && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
@@ -195,10 +236,26 @@ export default function SortableCard({
   );
 }
 
-function Line({ icon, label, value, labelPad }: { icon: string; label: string; value: React.ReactNode; labelPad?: string }) {
+function Line({
+  icon,
+  label,
+  value,
+  labelPad,
+}: {
+  icon: string;
+  label: string;
+  value: React.ReactNode;
+  labelPad?: string;
+}) {
   return (
     <div className="flex items-center gap-2 text-sm sm:text-base">
-      <Image src={icon} alt={label} width={16} height={16} className="w-4 h-4" />
+      <Image
+        src={icon}
+        alt={label}
+        width={16}
+        height={16}
+        className="w-4 h-4"
+      />
       <span className="font-semibold">{label} :</span>
       <span className={labelPad ?? "ml-8 sm:ml-12"}>{value}</span>
     </div>
