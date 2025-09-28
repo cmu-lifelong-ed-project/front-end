@@ -1,14 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, X, Search as SearchIcon } from "lucide-react"; // NEW
-import { getStatusColorByName, hexToRgba } from "@/lib/ui";
+import { ChevronDown, ChevronUp, Search as SearchIcon } from "lucide-react";
 import type { CourseStatus } from "@/types/api/status";
 
-export default function FilterDropdown({
+export default function FilterSearchBar({
   items,
   onChange,
   onSearch, //callback ส่งคำค้น
-  label = "สถานะรายวิชา",
+  label,
 }: {
   items: CourseStatus[];
   onChange?: (selectedIds: number[]) => void;
@@ -32,13 +31,6 @@ export default function FilterDropdown({
     });
   };
 
-  const removeOne = (id: number) => {
-    setSelected((prev) => {
-      const next = prev.filter((v) => v !== id);
-      onChange?.(next);
-      return next;
-    });
-  };
   // Close on outside click
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {

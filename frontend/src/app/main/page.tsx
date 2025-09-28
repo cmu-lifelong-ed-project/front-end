@@ -14,8 +14,8 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
+import { Plus } from "lucide-react";
 
-import FilterDropdown from "@/components/filter/FilterDropdown";
 import SortableCard from "@/components/SortableCard";
 import QueueModal from "../../components/QueueModal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -36,6 +36,7 @@ import { getStaffStatuses } from "@/lib/api/staffStatus";
 import { getFaculties } from "@/lib/api/faculty";
 import { getCourseStatuses } from "@/lib/api/courseStatus";
 import { getUser } from "@/lib/api/user";
+import FilterSearchBar from "@/components/FilterSearchBar";
 
 const notoSansThai = Noto_Sans_Thai({
   weight: ["300", "400", "500", "600", "700"],
@@ -134,14 +135,11 @@ export default function QueuePage() {
         }
         if (cancelled) return;
 
-        const sorted = [...(listQueue || [])].sort(
-          (a, b) => a.priority - b.priority
-        );
-        setCards(sorted);
+        setCards(listQueue);
 
         // 3) progress
         const map: Record<number, { done: number; total: number }> = {};
-        sorted.forEach((c) => {
+        listQueue.forEach((c) => {
           const { done, total } = summarizeMappings(c.order_mappings ?? []);
           map[c.id] = { done, total };
         });
@@ -381,7 +379,7 @@ export default function QueuePage() {
       ids.length === 0
         ? await getUnfinishedListQueues(token)
         : await getListQueuesByCourseStatus(ids, token);
-    setCards((listqueue || []).sort((a, b) => a.priority - b.priority));
+    setCards(listqueue);
   }
 
   return (
@@ -394,24 +392,23 @@ export default function QueuePage() {
           {(userRole === "admin" || userRole === "staff") && (
             <div className="flex items-center gap-3">
               <button
-                className="self-start sm:self-auto bg-[#34C759] text-white px-5 sm:px-3 py-2.5 sm:py-2 rounded-full shadow-md hover:bg-[#28A745] focus:outline-none"
+                className="self-start sm:self-auto bg-[#34C759] text-white px-5 sm:px-3 py-2.5 sm:py-2 rounded-full shadow-md hover:bg-[#28A745] focus:outline-none flex flex-row items-center gap-x-1"
                 onClick={() => {
                   resetForm();
                   setShowModal(true);
                 }}
               >
-                + สร้างรายการคิว
+                <Plus size={16} /> สร้างรายการคิว
               </button>
             </div>
           )}
         </div>
 
-        <div className="mt-6 mb-8 flex items-center gap-4">
-          <FilterDropdown
+        <div className="mt-6 mb-8 flex items-center">
+          <FilterSearchBar
             items={courseStatusList}
             onChange={(ids) => filterByCourseStatus(ids)}
             label="สถานะรายวิชา"
-            // onChange={(selected) => setCourseStatusId(selected.join(","))}
             onSearch={(q) => setSearchTitle(q)}
           />
         </div>
