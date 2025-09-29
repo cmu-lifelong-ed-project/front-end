@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -26,7 +26,11 @@ export default function Navbar() {
       try {
         const res = await fetch("/api/whoAmI");
         const data = await res.json();
-        if (data.ok && Array.isArray(data.cmuBasicInfo) && data.cmuBasicInfo.length > 0) {
+        if (
+          data.ok &&
+          Array.isArray(data.cmuBasicInfo) &&
+          data.cmuBasicInfo.length > 0
+        ) {
           const u = data.cmuBasicInfo[0];
           setFullName(`${u.firstname_EN} ${u.lastname_EN}`);
         } else {
@@ -70,11 +74,15 @@ export default function Navbar() {
 
   return (
     <nav
-        className={`${manrope.className} fixed top-0 left-0 w-full z-50 
+      className={`${manrope.className} fixed top-0 left-0 w-full z-50 
                     transition-all duration-300 
-                    ${isScrolled ? "bg-white/80 backdrop-blur-md shadow-md" : "bg-white"} 
+                    ${
+                      isScrolled
+                        ? "bg-white/80 backdrop-blur-md shadow-md"
+                        : "bg-white"
+                    } 
                     py-1`}
-      >
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-18">
           {/* โลโก้ */}
@@ -116,13 +124,26 @@ export default function Navbar() {
               className="text-black hover:text-gray-600 focus:outline-none"
               aria-label="Toggle menu"
             >
-              <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="h-7 w-7"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 {isOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M4 6h16M4 12h16M4 18h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 )}
               </svg>
             </button>
@@ -169,11 +190,14 @@ export default function Navbar() {
             className="fixed z-[1001] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
                        bg-white rounded-2xl shadow-xl w-[90%] max-w-[420px] p-6"
           >
-            <h4 id="logout-title" className="text-center font-bold text-[20px] mb-2 text-purple-700">
+            <h4
+              id="logout-title"
+              className="text-center font-bold text-[20px] mb-2 text-purple-700"
+            >
               Logout
             </h4>
             <p className="text-center text-gray-700 mb-6">
-              are you sure you want to log out?
+              Are you sure you want to log out?
             </p>
             <div className="flex justify-center gap-4">
               <button

@@ -4,9 +4,9 @@ import Image from "next/image";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import DateLeftCountdown from "./DateLeftCountdown";
-import { CardItem } from "@/types/api/queue";
+import { ListQueue } from "@/types/api/queue";
 import { CourseStatus } from "@/types/api/status";
-import { FacultyItem } from "@/types/api/faculty";
+import { Faculty } from "@/types/api/faculty";
 import {
   getStatusColorByName,
   hexToRgba,
@@ -15,9 +15,9 @@ import {
 } from "../lib/ui";
 
 interface SortableCardProps {
-  item: CardItem;
+  item: ListQueue;
   onEdit: () => void;
-  facultyList: FacultyItem[];
+  facultyList: Faculty[];
   courseStatusList: CourseStatus[];
   progressDone?: number;
   progressTotal?: number;
@@ -56,7 +56,7 @@ export default function SortableCard({
   } as React.CSSProperties;
 
   const facultyNameTH =
-    facultyList.find((f) => String(f.id) === String(item.faculty))?.nameTH ||
+    facultyList.find((f) => String(f.id) === String(item.faculty.id))?.nameTH ||
     "Unknown Faculty";
   const courseStatusName =
     courseStatusList.find((c) => c.id === item.course_status_id)?.status ||
@@ -180,7 +180,7 @@ export default function SortableCard({
             <Line
               icon="/User Status.png"
               label="สถานะ ผู้ใช้"
-              value={item.user_status?.status ?? "-"}
+              value={"-"}
               labelPad="ml-10"
             />
           </div>

@@ -1,4 +1,4 @@
-export type FacultyItem = {
+export type Faculty = {
   id: number;
   code: string;
   nameTH: string;

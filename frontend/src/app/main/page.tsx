@@ -18,24 +18,31 @@ import { Plus } from "lucide-react";
 
 import SortableCard from "@/components/SortableCard";
 import QueueModal from "../../components/QueueModal";
-import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import SuccessOverlay from "@/components/ui/SuccessOverlay";
-import { CardItem } from "@/types/api/queue";
-import { FacultyItem } from "@/types/api/faculty";
+import {
+  ListQueue,
+  CreateListQueueInput,
+  UpdateListQueueInput,
+} from "@/types/api/queue";
+import { Faculty } from "@/types/api/faculty";
 import { OrderMapping } from "@/types/api/order";
 import { CourseStatus, StaffStatus } from "@/types/api/status";
 import { toDatetimeLocal } from "@/lib/ui";
-import { getCookie, clearCookie } from "@/lib/cookie";
+import { getCookie } from "@/lib/cookie";
 import {
   getUnfinishedListQueues,
   getMyFacultyListQueues,
   getMyListQueues,
   getListQueuesByCourseStatus,
+  createListQueue,
+  updateListQueue,
+  updateListQueuePriority,
 } from "@/lib/api/listqueue";
 import { getStaffStatuses } from "@/lib/api/staffStatus";
 import { getFaculties } from "@/lib/api/faculty";
 import { getCourseStatuses } from "@/lib/api/courseStatus";
 import { getUser } from "@/lib/api/user";
+import { updateOrder } from "@/lib/api/order";
 import FilterSearchBar from "@/components/FilterSearchBar";
 
 const notoSansThai = Noto_Sans_Thai({
@@ -45,7 +52,7 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export default function QueuePage() {
-  const [cards, setCards] = useState<CardItem[]>([]);
+  const [cards, setCards] = useState<ListQueue[]>([]);
   const [title, setTitle] = useState("");
   const [faculty, setFaculty] = useState("");
   const [staffId, setStaffId] = useState("");
@@ -67,13 +74,12 @@ export default function QueuePage() {
   const [token, setToken] = useState("");
 
   const [staffStatusList, setStaffStatusList] = useState<StaffStatus[]>([]);
-  const [facultyList, setFacultyList] = useState<FacultyItem[]>([]);
+  const [facultyList, setFacultyList] = useState<Faculty[]>([]);
   const [courseStatusList, setCourseStatusList] = useState<CourseStatus[]>([]);
 
   const [showSuccess, setShowSuccess] = useState<null | {
     mode: "create" | "edit";
   }>(null);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const [orderMappings, setOrderMappings] = useState<OrderMapping[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
@@ -97,17 +103,6 @@ export default function QueuePage() {
   );
 
   useEffect(() => {
-    const el = document.getElementById("logout-btn");
-    if (!el) return;
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setShowLogoutConfirm(true);
-    };
-    el.addEventListener("click", handler);
-    return () => el.removeEventListener("click", handler);
-  }, []);
-
-  useEffect(() => {
     const t = getCookie("backend-api-token");
     setToken(t);
   }, []);
@@ -121,11 +116,11 @@ export default function QueuePage() {
         // 1) role
         const user = await getUser(token);
         if (cancelled) return;
-        const role: string = user?.role;
+        const role = user?.role;
         setUserRole(role);
 
         // 2) listqueue ตาม role
-        let listQueue: CardItem[] = [];
+        let listQueue: ListQueue[] = [];
         if (role === "user") {
           listQueue = await getMyListQueues(token);
         } else if (role === "officer") {
@@ -186,64 +181,39 @@ export default function QueuePage() {
       alert("กรุณากรอกวันเวลาทุกช่องให้ครบ");
       return;
     }
-    const body = {
-      id: editingItemId ?? undefined,
+    const body: CreateListQueueInput = {
       title,
-      staff_id: parseInt(staffId),
-      faculty,
-      staff_status_id: parseInt(staffStatusId),
+      staff_id: Number(staffId),
+      faculty_id: Number(faculty),
+      staff_status_id: Number(staffStatusId),
+      course_status_id: Number(courseStatusId),
       wordfile_submit: new Date(wordfileSubmit).toISOString(),
       info_submit: new Date(infoSubmit).toISOString(),
       info_submit_14days: new Date(infoSubmit14days).toISOString(),
       time_register: new Date(timeRegister).toISOString(),
-      date_left: Number(dateLeft),
       on_web: new Date(onWeb).toISOString(),
       appointment_date_aw: new Date(appointmentDateAw).toISOString(),
-      course_status_id: parseInt(courseStatusId),
       note,
     };
-    const url = "http://localhost:8080/api/listqueue";
-    const method = editMode ? "PUT" : "POST";
-    fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-      credentials: "include",
-    })
-      .then(async (res) => {
-        if (!res.ok)
-          throw new Error(
-            `${method} failed: ${res.status} - ${await res.text()}`
-          );
-        return res.json();
-      })
-      .then(async (updatedItem: CardItem) => {
+    const doRequest = editMode
+      ? updateListQueue(
+          { ...(body as UpdateListQueueInput), id: Number(editingItemId) },
+          token
+        )
+      : createListQueue(body, token);
+
+    doRequest
+      .then((updatedItem) => {
         setShowSuccess({ mode: editMode ? "edit" : "create" });
         setShowModal(false);
         resetForm();
 
-        if (editMode) {
-          if (editingItemId && staffStatusId) {
-            await fetch(
-              `http://localhost:8080/api/listqueue/${editingItemId}/status/${parseInt(
-                staffStatusId
-              )}`,
-              {
-                method: "PUT",
-                headers: { Authorization: `Bearer ${token}` },
-                credentials: "include",
-              }
-            );
-          }
-          setCards((prev) =>
-            prev.map((c) => (c.id === updatedItem.id ? updatedItem : c))
-          );
-        } else {
-          setCards((prev) => [...prev, updatedItem]);
-        }
+        setCards((prev) => {
+          const next = editMode
+            ? prev.map((c) => (c.id === updatedItem.id ? updatedItem : c))
+            : [...prev, updatedItem];
+          return [...next];
+        });
 
         const summary = summarizeMappings(updatedItem.order_mappings || []);
         setProgressMap((prev) => ({ ...prev, [updatedItem.id]: summary }));
@@ -271,16 +241,14 @@ export default function QueuePage() {
     setCurrentId(null);
   }
 
-  function handleEditClick(item: CardItem) {
+  function handleEditClick(item: ListQueue) {
     setEditMode(true);
     setEditingItemId(item.id);
     setTitle(item.title);
-    setFaculty(item.faculty);
+    setFaculty(String(item.faculty.id));
     setStaffId(String(item.staff_id));
     setStaffStatusId(String(item.staff_status.id));
-    setCourseStatusId(
-      item.course_status_id ? String(item.course_status_id) : ""
-    );
+    setCourseStatusId(String(item.course_status_id));
     setNote(item.note || "");
     setWordfileSubmit(
       item.wordfile_submit ? item.wordfile_submit.substring(0, 16) : ""
@@ -300,7 +268,7 @@ export default function QueuePage() {
     setCurrentId(item.id);
   }
 
-  function handleDragEnd(event: DragEndEvent) {
+  async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -313,29 +281,14 @@ export default function QueuePage() {
 
     setCards(newCards);
 
-    newCards.forEach((card) => {
-      fetch("http://localhost:8080/api/listqueue", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          id: card.id,
-          priority: card.priority,
-        }),
-      })
-        .then((res) => {
-          if (!res.ok)
-            throw new Error(
-              `Failed to update priority ${card.id}: ${res.status}`
-            );
-        })
-        .catch((err) =>
-          console.error(`Failed to update priority ${card.id}`, err)
-        );
-    });
+    for (const card of newCards) {
+      updateListQueuePriority(
+        { id: card.id, priority: card.priority },
+        token
+      ).catch((err) =>
+        console.error(`Failed to update priority ${card.id}`, err)
+      );
+    }
   }
 
   async function handleToggleOrder(
@@ -345,28 +298,14 @@ export default function QueuePage() {
   ) {
     if (!token) return;
     try {
-      await fetch("http://localhost:8080/api/order", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          order_id: orderId,
-          list_queue_id: listQueueId,
-          checked,
-        }),
-        credentials: "include",
-      });
+      await updateOrder(
+        { order_id: orderId, list_queue_id: listQueueId, checked },
+        token
+      );
     } catch (err) {
       console.error(err);
       alert("Update order failed");
     }
-  }
-
-  function doLogout() {
-    clearCookie("backend-api-token");
-    window.location.href = "/login";
   }
 
   const filteredCards = cards.filter((c) =>
@@ -408,7 +347,6 @@ export default function QueuePage() {
           <FilterSearchBar
             items={courseStatusList}
             onChange={(ids) => filterByCourseStatus(ids)}
-            label="สถานะรายวิชา"
             onSearch={(q) => setSearchTitle(q)}
           />
         </div>
@@ -502,17 +440,6 @@ export default function QueuePage() {
           }
           onClose={() => setShowSuccess(null)}
           autoCloseMs={2000}
-        />
-      )}
-
-      {showLogoutConfirm && (
-        <ConfirmDialog
-          title="Logout"
-          message="Are you sure you want to log out?"
-          confirmText="Yes, Logout"
-          cancelText="Cancel"
-          onConfirm={doLogout}
-          onCancel={() => setShowLogoutConfirm(false)}
         />
       )}
     </div>

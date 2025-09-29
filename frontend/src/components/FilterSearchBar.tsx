@@ -7,7 +7,7 @@ export default function FilterSearchBar({
   items,
   onChange,
   onSearch, //callback ส่งคำค้น
-  label,
+  label = "สถานะรายวิชา",
 }: {
   items: CourseStatus[];
   onChange?: (selectedIds: number[]) => void;

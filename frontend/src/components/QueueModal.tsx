@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { CourseStatus, StaffStatus } from "@/types/api/status";
-import { FacultyItem } from "@/types/api/faculty";
+import { Faculty } from "@/types/api/faculty";
 import { OrderMapping } from "@/types/api/order";
 
 type Props = {
@@ -37,7 +37,7 @@ type Props = {
   note: string;
   setNote: (v: string) => void;
 
-  facultyList: FacultyItem[];
+  facultyList: Faculty[];
   courseStatusList: CourseStatus[];
   staffStatusList: StaffStatus[];
 
