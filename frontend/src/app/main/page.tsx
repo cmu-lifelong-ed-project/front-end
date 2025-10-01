@@ -321,6 +321,11 @@ export default function QueuePage() {
     setCards(listqueue);
   }
 
+
+
+
+
+
   return (
     <div className={`${notoSansThai.className} bg-[#F8F4FF] min-h-screen`}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">

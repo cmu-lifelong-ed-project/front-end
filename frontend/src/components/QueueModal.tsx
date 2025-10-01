@@ -3,6 +3,9 @@ import React, { useEffect, useState } from "react";
 import { CourseStatus, StaffStatus } from "@/types/api/status";
 import { Faculty } from "@/types/api/faculty";
 import { OrderMapping } from "@/types/api/order";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { FaRegCalendarAlt } from "react-icons/fa"; // react-icons
 
 type Props = {
   isOpen: boolean;
@@ -341,69 +344,68 @@ export default function QueueModal(props: Props) {
 
               {/* รายการงาน: all = แสดงงานค้าง / done = แสดงงานเสร็จ */}
               <div className="space-y-3">
-                {orderMappings
-                  .filter((o) =>
-                    orderView === "done" ? o.checked : !o.checked
-                  )
-                  .map((om) => {
-                    const id = `order-${String(om.id)}`;
-                    const checked = !!om.checked;
-                    return (
-                      <label
-                        key={id}
-                        htmlFor={id}
-                        className="flex items-center gap-3 cursor-pointer"
-                      >
-                        {/* วงกลมแบบ radio-like */}
-                        <span
-                          className={`relative inline-flex h-5 w-5 items-center justify-center rounded-full border
-                            ${
-                              checked ? "border-[#8741D9]" : "border-gray-300"
-                            }`}
-                        >
-                          <input
-                            id={id}
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              const isChecked = e.target.checked;
-                              setOrderMappings((prev) => {
-                                const next = prev.map((o) =>
-                                  o.id === om.id
-                                    ? { ...o, checked: isChecked }
-                                    : o
-                                );
-                                if (currentId && onOrdersChanged) {
-                                  onOrdersChanged(currentId, summarize(next));
-                                }
-                                return next;
-                              });
-                              if (currentId && om.order?.id) {
-                                onToggleOrder(
-                                  currentId,
-                                  om.order.id,
-                                  isChecked
-                                );
-                              }
-                            }}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            aria-describedby={`${id}-label`}
-                          />
-                          {checked && (
-                            <span className="h-2.5 w-2.5 rounded-full bg-[#8741D9]" />
-                          )}
-                        </span>
+               
+             {orderMappings
+          .filter((o) => (orderView === "done" ? o.checked : !o.checked))
+          .map((om) => {
+            const id = `order-${om.id}`;
+            const checked = !!om.checked;
+            return (
+              <div key={id} className="flex items-center justify-between rounded-3xl px-4 py-4 shadow-sm ">
+                <label htmlFor={id} className="flex items-center gap-3 cursor-pointer flex-1">
+                  <span className={`relative inline-flex h-5 w-5 items-center justify-center rounded-full border ${checked ? "border-[#8741D9]" : "border-gray-300"}`}>
+                    <input
+                      id={id}
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        setOrderMappings(prev => {
+                          const next = prev.map(o => o.id === om.id ? { ...o, checked: isChecked } : o);
+                          if (currentId && onOrdersChanged) onOrdersChanged(currentId, summarize(next));
+                          return next;
+                        });
+                        if (currentId && om.order?.id) onToggleOrder(currentId, om.order.id, isChecked);
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    {checked && <span className="h-2.5 w-2.5 rounded-full bg-[#8741D9]" />}
+                  </span>
+                  <span className="text-sm text-gray-900">{om.order?.title}</span>
+                </label>
 
-                        <span
-                          id={`${id}-label`}
-                          className="text-sm text-gray-900"
-                        >
-                          {om.order?.title}
-                        </span>
-                      </label>
-                    );
-                  })}
+                {/* Delete Button - ลบได้ทันที ไม่ต้องติ๊ก */}
+                <button
+                  type="button"
+                  className="text-red-500 hover:text-red-700 text-sm font-semibold"
+                  onClick={async () => {
+                    if (!om.order?.id) return;
+                    try {
+                      const res = await fetch(`http://localhost:8080/api/order/${om.order.id}`, {
+                        method: "DELETE",
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      if (!res.ok) throw new Error("Delete order failed");
+                      setOrderMappings(prev => {
+                        const next = prev.filter(o => o.id !== om.id);
+                        if (currentId && onOrdersChanged) onOrdersChanged(currentId, summarize(next));
+                        return next;
+                      });
+                    } catch (err) {
+                      console.error(err);
+                      alert("ลบ Order ไม่สำเร็จ");
+                    }
+                  }}
+                >
+                  ลบ
+                </button>
               </div>
+            );
+          })}
+              </div>
+
+
+
 
               {/* ปุ่มเพิ่มเตือนความจำ */}
               <div className="mt-6">
@@ -540,6 +542,8 @@ export default function QueueModal(props: Props) {
   );
 }
 
+
+
 function DateInput({
   label,
   value,
@@ -551,17 +555,43 @@ function DateInput({
   onChange: (v: string) => void;
   inputBase: string;
 }) {
+  const date = value ? new Date(value) : null;
+
+  const CustomInput = React.forwardRef<HTMLInputElement, any>(
+    ({ value, onClick }, ref) => (
+      <div className="relative w-full">
+        <input
+          readOnly
+          value={value}
+          onClick={onClick}
+          ref={ref}
+          className={`${inputBase} w-full pr-10 border rounded-3xl py-2 px-3`}
+        />
+        <FaRegCalendarAlt
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
+          onClick={onClick}
+        />
+      </div>
+    )
+  );
+
   return (
-    <label className="flex flex-col gap-1">
+    <label className="flex flex-col gap-1 w-full">
       <span className="text-sm font-semibold">{label}</span>
-      <input
-        type="datetime-local"
-        placeholder="dd/mm/yyyy, --:--"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`${inputBase} [&::-webkit-datetime-edit]:text-gray-400`}
-        required
+      <DatePicker
+        selected={date}
+        onChange={(date: Date | null) => {
+          if (date) {
+            onChange(date.toISOString().split("T")[0]);
+          } else {
+            onChange("");
+          }
+        }}
+        dateFormat="dd/MM/yyyy"
+        customInput={<CustomInput />}
       />
     </label>
   );
 }
+
+
