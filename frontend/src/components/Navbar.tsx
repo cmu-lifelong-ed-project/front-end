@@ -195,7 +195,7 @@ export default function Navbar() {
                        bg-white rounded-2xl shadow-xl w-[90%] max-w-[420px] p-6"
           >
             <h4 id="logout-title" className="text-center font-bold text-[20px] mb-2 text-purple-700">
-              ยืนยัน
+              ออกจากระบบ
             </h4>
             <p className="text-center text-gray-700 mb-6">
               คุณต้องการออกจากระบบใช่หรือไม่?
@@ -212,7 +212,7 @@ export default function Navbar() {
                 onClick={handleSignOut}
                 className="px-5 sm:px-6 py-2 rounded-full bg-purple-100 text-purple-700 font-medium hover:bg-purple-200 transition"
               >
-                ยืนยัน, ออกจากระบบ
+                ยืนยัน
               </button>
             </div>
           </div>
