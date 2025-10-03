@@ -4,11 +4,11 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Manrope } from "next/font/google";
+import { Noto_Sans_Thai } from "next/font/google";
 
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const notoSansThai = Noto_Sans_Thai({
+  subsets: ["thai", "latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export default function Navbar() {
@@ -42,7 +42,7 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // โฟกัสปุ่ม Cancel + ปิดด้วย Esc
+  // ปิด modal ด้วย Esc
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setShowLogoutModal(false);
@@ -70,16 +70,16 @@ export default function Navbar() {
 
   return (
     <nav
-        className={`${manrope.className} fixed top-0 left-0 w-full z-50 
-                    transition-all duration-300 
-                    ${isScrolled ? "bg-white/80 backdrop-blur-md shadow-md" : "bg-white"} 
-                    py-1`}
-      >
+      className={`${notoSansThai.className} fixed top-0 left-0 w-full z-50 
+                  transition-all duration-300 
+                  ${isScrolled ? "bg-white/80 backdrop-blur-md shadow-md" : "bg-white"} 
+                  py-1`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-18">
           {/* โลโก้ */}
           <div className="flex-shrink-0">
-            <Link href="/main">
+            <Link href="/main" aria-label="ไปหน้าแรก">
               <Image
                 src="/logo_le.png"
                 alt="LifeLong Logo"
@@ -91,30 +91,45 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Desktop: ป้ายชื่อ + ไอคอนออกขวา */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Desktop: ชื่อ + ตั้งค่า + ออก */}
+          <div className="hidden md:flex items-center gap-2">
             {fullName && (
               <>
-                <div className="px-4 py-2 rounded-full bg-purple-100 text-[#1E293B] shadow-sm min-w-[140px] text-center">
+                <div className="px-4 py-1 rounded-full border border-purple-300 bg-purple-50 
+                                text-[#1E293B] shadow-sm min-w-[150px] text-center 
+                                text-[15px] font-normal">
                   {fullName}
                 </div>
+
+                {/* ตั้งค่า */}
+                <Link
+                  href="/setting"
+                  aria-label="ตั้งค่า"
+                  className="p-1 rounded-lg hover:bg-gray-100 active:scale-95 transition flex items-center justify-center"
+                  title="ตั้งค่า"
+                >
+                  <Image src="/navbar/settings.png" alt="settings" width={21} height={21} />
+                </Link>
+
+                {/* ออกจากระบบ */}
                 <button
                   onClick={() => setShowLogoutModal(true)}
-                  aria-label="Sign out"
-                  className="p-2 rounded-lg hover:bg-gray-100 active:scale-95 transition flex items-center justify-center"
+                  aria-label="ออกจากระบบ"
+                  title="ออกจากระบบ"
+                  className="p-1 rounded-lg hover:bg-gray-100 active:scale-95 transition flex items-center justify-center"
                 >
-                  <Image src="/exit.png" alt="logout" width={30} height={30} />
+                  <Image src="/navbar/exit.png" alt="logout" width={20} height={20} />
                 </button>
               </>
             )}
           </div>
 
-          {/* Mobile: แสดงเฉพาะ Hamburger (ชื่อ+logout อยู่ในเมนู) */}
+          {/* Mobile: Hamburger */}
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-black hover:text-gray-600 focus:outline-none"
-              aria-label="Toggle menu"
+              aria-label="สลับเมนู"
             >
               <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {isOpen ? (
@@ -130,32 +145,42 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* เมนูมือถือ: ใส่ชื่อ + ปุ่มออกในนี้ */}
+      {/* Mobile menu */}
       {isOpen && (
         <div className="md:hidden bg-white px-6 pt-4 pb-6 shadow-md rounded-b-xl space-y-4">
           {fullName && (
             <div className="flex items-center justify-between">
-              <div className="px-4 py-2 rounded-full bg-purple-100 text-[#1E293B] shadow-sm">
+              <div className="px-4 py-1 rounded-full border border-purple-300 bg-purple-50 
+                              text-[#1E293B] shadow-sm text-[14px] font-normal min-w-[120px] text-center">
                 {fullName}
               </div>
-              <button
-                onClick={() => setShowLogoutModal(true)}
-                aria-label="Sign out"
-                className="p-2 rounded-lg hover:bg-gray-100 active:scale-95 transition"
-              >
-                <Image src="/exit.png" alt="logout" width={20} height={20} />
-              </button>
+
+              <div className="flex items-center gap-1">
+                {/* ตั้งค่า */}
+                <Link
+                  href="/setting"
+                  aria-label="ตั้งค่า"
+                  className="p-1 rounded-lg hover:bg-gray-100 active:scale-95 transition flex items-center justify-center"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Image src="/navbar/settings.png" alt="settings" width={20} height={20} />
+                </Link>
+
+                {/* ออกจากระบบ */}
+                <button
+                  onClick={() => { setIsOpen(false); setShowLogoutModal(true); }}
+                  aria-label="ออกจากระบบ"
+                  className="p-1 rounded-lg hover:bg-gray-100 active:scale-95 transition flex items-center justify-center"
+                >
+                  <Image src="/navbar/exit.png" alt="logout" width={19} height={19} />
+                </button>
+              </div>
             </div>
           )}
-
-          {/* ลิงก์เมนูอื่นๆ */}
-          <MobileLink href="/" text="หน้าแรก" />
-          <MobileLink href="/about" text="เกี่ยวกับ" />
-          <MobileLink href="/contact" text="ติดต่อ" />
         </div>
       )}
 
-      {/* Modal ยืนยันออกจากระบบ (Manrope + โทนม่วง) */}
+      {/* Modal Logout */}
       {showLogoutModal && (
         <>
           <div
@@ -170,24 +195,24 @@ export default function Navbar() {
                        bg-white rounded-2xl shadow-xl w-[90%] max-w-[420px] p-6"
           >
             <h4 id="logout-title" className="text-center font-bold text-[20px] mb-2 text-purple-700">
-              Logout
+              ยืนยัน
             </h4>
             <p className="text-center text-gray-700 mb-6">
-              are you sure you want to log out?
+              คุณต้องการออกจากระบบใช่หรือไม่?
             </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-3 sm:gap-4">
               <button
                 ref={cancelBtnRef}
                 onClick={() => setShowLogoutModal(false)}
-                className="px-6 py-2 rounded-full bg-purple-700 text-white font-medium hover:bg-purple-800 transition"
+                className="px-5 sm:px-6 py-2 rounded-full bg-purple-700 text-white font-medium hover:bg-purple-800 transition"
               >
-                Cancel
+                ยกเลิก
               </button>
               <button
                 onClick={handleSignOut}
-                className="px-6 py-2 rounded-full bg-purple-100 text-purple-700 font-medium hover:bg-purple-200 transition"
+                className="px-5 sm:px-6 py-2 rounded-full bg-purple-100 text-purple-700 font-medium hover:bg-purple-200 transition"
               >
-                Yes, Logout
+                ยืนยัน, ออกจากระบบ
               </button>
             </div>
           </div>
@@ -196,12 +221,3 @@ export default function Navbar() {
     </nav>
   );
 }
-
-const MobileLink = ({ href, text }: { href: string; text: string }) => (
-  <Link
-    href={href}
-    className="block text-gray-800 font-medium hover:text-indigo-600 transition duration-200"
-  >
-    {text}
-  </Link>
-);
