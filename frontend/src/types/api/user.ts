@@ -1,0 +1,20 @@
+export type User = {
+  id: number;
+  cmuitaccount_name: string;
+  cmuitaccount: string;
+  role: string;
+  prename_id: string;
+  prename_th: string;
+  prename_en: string;
+  firstname_th: string;
+  firstname_en: string;
+  lastname_th: string;
+  lastname_en: string;
+  organization_code: string;
+  organization_name_th: string;
+  organization_name_en: string;
+  itaccounttype_id: string;
+  itaccounttype_th: string;
+  itaccounttype_en: string;
+  is_first_time: boolean;
+};

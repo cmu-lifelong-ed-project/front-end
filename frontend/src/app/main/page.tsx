@@ -14,24 +14,36 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import { Funnel } from "lucide-react";
+import { Plus } from "lucide-react";
 
-import FilterDropdown from "@/components/filter/FilterDropdown";
 import SortableCard from "@/components/SortableCard";
 import QueueModal from "../../components/QueueModal";
-import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import SuccessOverlay from "@/components/ui/SuccessOverlay";
-
 import {
-  CardItem,
-  CourseStatus,
-  FacultyItem,
-  OrderMapping,
-  StaffStatus,
-  UserStatus,
-} from "../../types/queue";
+  ListQueue,
+  CreateListQueueInput,
+  UpdateListQueueInput,
+} from "@/types/api/queue";
+import { Faculty } from "@/types/api/faculty";
+import { OrderMapping } from "@/types/api/order";
+import { CourseStatus, StaffStatus } from "@/types/api/status";
 import { toDatetimeLocal } from "@/lib/ui";
-import { getCookie, clearCookie } from "@/lib/cookie";
+import { getCookie } from "@/lib/cookie";
+import {
+  getUnfinishedListQueues,
+  getMyFacultyListQueues,
+  getMyListQueues,
+  getListQueuesByCourseStatus,
+  createListQueue,
+  updateListQueue,
+  updateListQueuePriority,
+} from "@/lib/api/listqueue";
+import { getStaffStatuses } from "@/lib/api/staffStatus";
+import { getFaculties } from "@/lib/api/faculty";
+import { getCourseStatuses } from "@/lib/api/courseStatus";
+import { getUser } from "@/lib/api/user";
+import { updateOrder } from "@/lib/api/order";
+import FilterSearchBar from "@/components/FilterSearchBar";
 
 const notoSansThai = Noto_Sans_Thai({
   weight: ["300", "400", "500", "600", "700"],
@@ -40,9 +52,7 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export default function QueuePage() {
-  const [cards, setCards] = useState<CardItem[]>([]);
-
-  // form states
+  const [cards, setCards] = useState<ListQueue[]>([]);
   const [title, setTitle] = useState("");
   const [faculty, setFaculty] = useState("");
   const [staffId, setStaffId] = useState("");
@@ -64,19 +74,22 @@ export default function QueuePage() {
   const [token, setToken] = useState("");
 
   const [staffStatusList, setStaffStatusList] = useState<StaffStatus[]>([]);
-  const [userStatusList, setUserStatusList] = useState<UserStatus[]>([]);
-  const [facultyList, setFacultyList] = useState<FacultyItem[]>([]);
+  const [facultyList, setFacultyList] = useState<Faculty[]>([]);
   const [courseStatusList, setCourseStatusList] = useState<CourseStatus[]>([]);
 
-  const [showSuccess, setShowSuccess] = useState<null | { mode: "create" | "edit" }>(null);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showSuccess, setShowSuccess] = useState<null | {
+    mode: "create" | "edit";
+  }>(null);
 
   const [orderMappings, setOrderMappings] = useState<OrderMapping[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
+  const [userRole, setUserRole] = useState<string>("");
+  const [progressMap, setProgressMap] = useState<
+    Record<number, { done: number; total: number }>
+  >({});
 
-  //  เก็บผลรวมงานของแต่ละคิว (ใช้สำหรับส่งให้การ์ด)
-  const [progressMap, setProgressMap] =
-    useState<Record<number, { done: number; total: number }>>({});
+  // เพิ่ม state สำหรับค้นหา title
+  const [searchTitle, setSearchTitle] = useState("");
 
   // helper สรุปงานจาก order_mappings
   function summarizeMappings(oms: OrderMapping[] = []) {
@@ -85,77 +98,72 @@ export default function QueuePage() {
     return { done, total };
   }
 
-  // drag sensors
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  // bind logout red button (id="logout-btn")
-  useEffect(() => {
-    const el = document.getElementById("logout-btn");
-    if (!el) return;
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setShowLogoutConfirm(true);
-    };
-    el.addEventListener("click", handler);
-    return () => el.removeEventListener("click", handler);
-  }, []);
-
-  // fetch data
   useEffect(() => {
     const t = getCookie("backend-api-token");
-    if (!t) return;
     setToken(t);
+  }, []);
 
-    fetch("http://localhost:8080/api/listqueue", {
-      headers: { Authorization: `Bearer ${t}` },
-      credentials: "include",
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        const sorted = (data || []).sort(
-          (a: CardItem, b: CardItem) => a.priority - b.priority
-        );
-        setCards(sorted);
+  useEffect(() => {
+    if (!token) return;
 
-        //  คำนวณ progress เริ่มต้นของแต่ละคิวจาก order_mappings ที่มากับ API
+    let cancelled = false;
+    (async () => {
+      try {
+        // 1) role
+        const user = await getUser(token);
+        if (cancelled) return;
+        const role = user?.role;
+        setUserRole(role);
+
+        // 2) listqueue ตาม role
+        let listQueue: ListQueue[] = [];
+        if (role === "user") {
+          listQueue = await getMyListQueues(token);
+        } else if (role === "officer") {
+          listQueue = await getMyFacultyListQueues(token);
+        } else {
+          listQueue = await getUnfinishedListQueues(token); // admin, staff, LE
+        }
+        if (cancelled) return;
+
+        setCards(listQueue);
+
+        // 3) progress
         const map: Record<number, { done: number; total: number }> = {};
-        sorted.forEach((c: CardItem) => {
-          // ถ้า type ของ CardItem ยังไม่มี order_mappings ให้เพิ่มใน types/queue.ts (order_mappings?: OrderMapping[])
-          const { done, total } = summarizeMappings((c as any).order_mappings || []);
+        listQueue.forEach((c) => {
+          const { done, total } = summarizeMappings(c.order_mappings ?? []);
           map[c.id] = { done, total };
         });
         setProgressMap(map);
-      })
-      .catch(console.error);
 
-    Promise.all([
-      fetch("http://localhost:8080/api/staffstatus", {
-        headers: { Authorization: `Bearer ${t}` },
-        credentials: "include",
-      }).then((r) => r.json()),
-      fetch("http://localhost:8080/api/userstatus", {
-        headers: { Authorization: `Bearer ${t}` },
-        credentials: "include",
-      }).then((r) => r.json()),
-      fetch("http://localhost:8080/api/faculty", {
-        headers: { Authorization: `Bearer ${t}` },
-        credentials: "include",
-      }).then((r) => r.json()),
-      fetch("http://localhost:8080/api/course/status", {
-        headers: { Authorization: `Bearer ${t}` },
-        credentials: "include",
-      }).then((r) => r.json()),
-    ])
-      .then(([staffS, userS, fac, course]) => {
-        setStaffStatusList(staffS);
-        setUserStatusList(userS);
-        setFacultyList(Array.isArray(fac) ? fac : fac.data ?? []);
-        setCourseStatusList(Array.isArray(course) ? course : course.data ?? []);
-      })
-      .catch(console.error);
-  }, []);
+        // 4) โหลดข้อมูลเฉพาะ role
+        if (role === "admin" || role === "staff") {
+          const [staffS, facultyS, courseS] = await Promise.all([
+            getStaffStatuses(token),
+            getFaculties(token),
+            getCourseStatuses(token),
+          ]);
+          if (cancelled) return;
+          setStaffStatusList(staffS);
+          setFacultyList(facultyS);
+          setCourseStatusList(courseS);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error(err);
+          alert("โหลดข้อมูลล้มเหลว");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   function handleSubmitQueue() {
     if (!token) {
@@ -173,67 +181,41 @@ export default function QueuePage() {
       alert("กรุณากรอกวันเวลาทุกช่องให้ครบ");
       return;
     }
-    const body = {
-      id: editingItemId ?? undefined,
+    const body: CreateListQueueInput = {
       title,
-      staff_id: parseInt(staffId),
-      faculty,
-      staff_status_id: parseInt(staffStatusId),
+      staff_id: Number(staffId),
+      faculty_id: Number(faculty),
+      staff_status_id: Number(staffStatusId),
+      course_status_id: Number(courseStatusId),
       wordfile_submit: new Date(wordfileSubmit).toISOString(),
       info_submit: new Date(infoSubmit).toISOString(),
       info_submit_14days: new Date(infoSubmit14days).toISOString(),
       time_register: new Date(timeRegister).toISOString(),
-      date_left: Number(dateLeft),
       on_web: new Date(onWeb).toISOString(),
       appointment_date_aw: new Date(appointmentDateAw).toISOString(),
-      course_status_id: parseInt(courseStatusId),
       note,
     };
-    const url = "http://localhost:8080/api/listqueue";
-    const method = editMode ? "PUT" : "POST";
-    fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-      credentials: "include",
-    })
-      .then(async (res) => {
-        if (!res.ok)
-          throw new Error(
-            `${method} failed: ${res.status} - ${await res.text()}`
-          );
-        return res.json();
-      })
-      .then(async (updatedItem) => {
+    const doRequest = editMode
+      ? updateListQueue(
+          { ...(body as UpdateListQueueInput), id: Number(editingItemId) },
+          token
+        )
+      : createListQueue(body, token);
+
+    doRequest
+      .then((updatedItem) => {
         setShowSuccess({ mode: editMode ? "edit" : "create" });
         setShowModal(false);
         resetForm();
 
-        if (editMode) {
-          if (editingItemId && staffStatusId) {
-            await fetch(
-              `http://localhost:8080/api/listqueue/${editingItemId}/status/${parseInt(
-                staffStatusId
-              )}`,
-              {
-                method: "PUT",
-                headers: { Authorization: `Bearer ${token}` },
-                credentials: "include",
-              }
-            );
-          }
-          setCards((prev) =>
-            prev.map((c) => (c.id === updatedItem.id ? updatedItem : c))
-          );
-        } else {
-          setCards((prev) => [...prev, updatedItem]);
-        }
+        setCards((prev) => {
+          const next = editMode
+            ? prev.map((c) => (c.id === updatedItem.id ? updatedItem : c))
+            : [...prev, updatedItem];
+          return [...next];
+        });
 
-        // ✅ อัปเดต progressMap จากข้อมูลล่าสุดที่ API ส่งกลับ (ถ้ามี order_mappings)
-        const summary = summarizeMappings((updatedItem as any).order_mappings || []);
+        const summary = summarizeMappings(updatedItem.order_mappings || []);
         setProgressMap((prev) => ({ ...prev, [updatedItem.id]: summary }));
       })
       .catch((err) => alert(err.message));
@@ -259,47 +241,54 @@ export default function QueuePage() {
     setCurrentId(null);
   }
 
-  function handleEditClick(item: CardItem) {
+  function handleEditClick(item: ListQueue) {
     setEditMode(true);
     setEditingItemId(item.id);
     setTitle(item.title);
-    setFaculty(item.faculty);
+    setFaculty(String(item.faculty.id));
     setStaffId(String(item.staff_id));
     setStaffStatusId(String(item.staff_status.id));
-    setCourseStatusId(item.course_status_id ? String(item.course_status_id) : "");
+    setCourseStatusId(String(item.course_status_id));
     setNote(item.note || "");
-    setWordfileSubmit(item.wordfile_submit ? item.wordfile_submit.substring(0, 16) : "");
+    setWordfileSubmit(
+      item.wordfile_submit ? item.wordfile_submit.substring(0, 16) : ""
+    );
     setInfoSubmit(item.info_submit ? item.info_submit.substring(0, 16) : "");
-    setInfoSubmit14days(item.info_submit_14days ? item.info_submit_14days.substring(0, 16) : "");
-    setTimeRegister(item.time_register ? item.time_register.substring(0, 16) : "");
+    setInfoSubmit14days(
+      item.info_submit_14days ? item.info_submit_14days.substring(0, 16) : ""
+    );
+    setTimeRegister(
+      item.time_register ? item.time_register.substring(0, 16) : ""
+    );
     setDateLeft(item.date_left ?? 0);
     setOnWeb(item.on_web ? item.on_web.substring(0, 16) : "");
     setAppointmentDateAw(toDatetimeLocal(item.appointment_date_aw));
     setShowModal(true);
-    setOrderMappings((item as any).order_mappings || []);
+    setOrderMappings(item.order_mappings || []);
     setCurrentId(item.id);
   }
 
-  function handleDragEnd(event: DragEndEvent) {
+  async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+
     const oldIndex = cards.findIndex((i) => i.id === active.id);
     const newIndex = cards.findIndex((i) => i.id === over.id);
     const newCards = arrayMove(cards, oldIndex, newIndex).map((card, idx) => ({
       ...card,
       priority: idx + 1,
     }));
+
     setCards(newCards);
-    newCards.forEach((card) => {
-      fetch(
-        `http://localhost:8080/api/listqueue/${card.id}/priority/${card.priority}`,
-        {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
-          credentials: "include",
-        }
+
+    for (const card of newCards) {
+      updateListQueuePriority(
+        { id: card.id, priority: card.priority },
+        token
+      ).catch((err) =>
+        console.error(`Failed to update priority ${card.id}`, err)
       );
-    });
+    }
   }
 
   async function handleToggleOrder(
@@ -309,57 +298,64 @@ export default function QueuePage() {
   ) {
     if (!token) return;
     try {
-      await fetch("http://localhost:8080/api/order", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          order_id: orderId,
-          list_queue_id: listQueueId,
-          checked,
-        }),
-        credentials: "include",
-      });
+      await updateOrder(
+        { order_id: orderId, list_queue_id: listQueueId, checked },
+        token
+      );
     } catch (err) {
       console.error(err);
       alert("Update order failed");
     }
   }
 
-  function doLogout() {
-    clearCookie("backend-api-token");
-    window.location.href = "/login";
+  const filteredCards = cards.filter((c) =>
+    c.title.toLowerCase().includes(searchTitle.toLowerCase())
+  );
+
+  async function filterByCourseStatus(ids: number[]) {
+    if (!token) return;
+    const listqueue =
+      ids.length === 0
+        ? await getUnfinishedListQueues(token)
+        : await getListQueuesByCourseStatus(ids, token);
+    setCards(listqueue);
   }
+
+
+
+
+
 
   return (
     <div className={`${notoSansThai.className} bg-[#F8F4FF] min-h-screen`}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
-        
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-2 sm:mb-1">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#8741D9]">
             รายการคิว
           </h2>
-          <div className="flex items-center gap-3">
-            <button
-              className="self-start sm:self-auto bg-[#34C759] text-white px-5 sm:px-3 py-2.5 sm:py-2 rounded-full shadow-md hover:bg-[#28A745] focus:outline-none"
-              onClick={() => {
-                resetForm();
-                setShowModal(true);
-              }}
-            >
-              + สร้างรายการคิว
-            </button>
-          </div>
+          {(userRole === "admin" || userRole === "staff") && (
+            <div className="flex items-center gap-3">
+              <button
+                className="self-start sm:self-auto bg-[#34C759] text-white px-5 sm:px-3 py-2.5 sm:py-2 rounded-full shadow-md hover:bg-[#28A745] focus:outline-none flex flex-row items-center gap-x-1"
+                onClick={() => {
+                  resetForm();
+                  setShowModal(true);
+                }}
+              >
+                <Plus size={16} /> สร้างรายการคิว
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Filter */}
-        <div className="mt-6 mb-8">
-          <FilterDropdown items={courseStatusList} />
+        <div className="mt-6 mb-8 flex items-center">
+          <FilterSearchBar
+            items={courseStatusList}
+            onChange={(ids) => filterByCourseStatus(ids)}
+            onSearch={(q) => setSearchTitle(q)}
+          />
         </div>
 
-        {/* Modal */}
         <QueueModal
           isOpen={showModal}
           editMode={editMode}
@@ -399,24 +395,26 @@ export default function QueuePage() {
           currentId={currentId}
           onToggleOrder={handleToggleOrder}
           token={token}
-          // ✅ รับผลรวมจาก modal แล้วยิงกลับมาอัปเดตแผนที่
           onOrdersChanged={(listQueueId, summary) => {
             setProgressMap((prev) => ({ ...prev, [listQueueId]: summary }));
           }}
         />
 
-        {/* List + DnD */}
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+          onDragEnd={
+            userRole === "admin" || userRole === "staff"
+              ? handleDragEnd
+              : undefined
+          }
         >
           <SortableContext
-            items={cards.map((card) => card.id)}
+            items={filteredCards.map((card) => card.id)}
             strategy={verticalListSortingStrategy}
           >
             <ul className="space-y-4 sm:space-y-6">
-              {cards.map((item) => {
+              {filteredCards.map((item) => {
                 const p = progressMap[item.id] || { done: 0, total: 0 };
                 return (
                   <SortableCard
@@ -425,9 +423,10 @@ export default function QueuePage() {
                     onEdit={() => handleEditClick(item)}
                     facultyList={facultyList}
                     courseStatusList={courseStatusList}
-                    // ✅ ส่งค่าเปอร์เซ็นต์ให้การ์ดคำนวณและเปลี่ยนสีหลอด
                     progressDone={p.done}
                     progressTotal={p.total}
+                    token={token}
+                    canDrag={userRole === "admin" || userRole === "staff"}
                   />
                 );
               })}
@@ -436,7 +435,6 @@ export default function QueuePage() {
         </DndContext>
       </div>
 
-      {/* success banner */}
       {showSuccess && (
         <SuccessOverlay
           title="Thank You !"
@@ -447,18 +445,6 @@ export default function QueuePage() {
           }
           onClose={() => setShowSuccess(null)}
           autoCloseMs={2000}
-        />
-      )}
-
-      {/* confirm logout */}
-      {showLogoutConfirm && (
-        <ConfirmDialog
-          title="Logout"
-          message="Are you sure you want to log out?"
-          confirmText="Yes, Logout"
-          cancelText="Cancel"
-          onConfirm={doLogout}
-          onCancel={() => setShowLogoutConfirm(false)}
         />
       )}
     </div>

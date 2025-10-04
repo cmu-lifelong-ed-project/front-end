@@ -1,28 +1,46 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
-import { CourseStatus, FacultyItem, OrderMapping, StaffStatus } from "../types/queue";
+import React, { useEffect, useState } from "react";
+import { CourseStatus, StaffStatus } from "@/types/api/status";
+import { Faculty } from "@/types/api/faculty";
+import { OrderMapping } from "@/types/api/order";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { FaRegCalendarAlt } from "react-icons/fa"; // react-icons
 
 type Props = {
   isOpen: boolean;
   editMode: boolean;
 
-  title: string; setTitle: (v: string) => void;
-  faculty: string; setFaculty: (v: string) => void;
-  staffId: string; setStaffId: (v: string) => void;
-  staffStatusId: string; setStaffStatusId: (v: string) => void;
-  courseStatusId: string; setCourseStatusId: (v: string) => void;
+  title: string;
+  setTitle: (v: string) => void;
+  faculty: string;
+  setFaculty: (v: string) => void;
+  staffId: string;
+  setStaffId: (v: string) => void;
+  staffStatusId: string;
+  setStaffStatusId: (v: string) => void;
+  courseStatusId: string;
+  setCourseStatusId: (v: string) => void;
 
-  wordfileSubmit: string; setWordfileSubmit: (v: string) => void;
-  infoSubmit: string; setInfoSubmit: (v: string) => void;
-  infoSubmit14days: string; setInfoSubmit14days: (v: string) => void;
-  timeRegister: string; setTimeRegister: (v: string) => void;
-  onWeb: string; setOnWeb: (v: string) => void;
-  appointmentDateAw: string; setAppointmentDateAw: (v: string) => void;
+  wordfileSubmit: string;
+  setWordfileSubmit: (v: string) => void;
+  infoSubmit: string;
+  setInfoSubmit: (v: string) => void;
+  infoSubmit14days: string;
+  setInfoSubmit14days: (v: string) => void;
+  timeRegister: string;
+  setTimeRegister: (v: string) => void;
+  onWeb: string;
+  setOnWeb: (v: string) => void;
+  appointmentDateAw: string;
+  setAppointmentDateAw: (v: string) => void;
 
-  dateLeft: number; setDateLeft: (v: number) => void;
-  note: string; setNote: (v: string) => void;
+  dateLeft: number;
+  setDateLeft: (v: number) => void;
+  note: string;
+  setNote: (v: string) => void;
 
-  facultyList: FacultyItem[];
+  facultyList: Faculty[];
   courseStatusList: CourseStatus[];
   staffStatusList: StaffStatus[];
 
@@ -32,31 +50,60 @@ type Props = {
   orderMappings: OrderMapping[];
   setOrderMappings: React.Dispatch<React.SetStateAction<OrderMapping[]>>;
   currentId: number | null;
-  onToggleOrder: (listQueueId: number, orderId: number, checked: boolean) => Promise<void>;
+  onToggleOrder: (
+    listQueueId: number,
+    orderId: number,
+    checked: boolean
+  ) => Promise<void>;
   token: string;
 
-  onOrdersChanged?: (listQueueId: number, summary: { done: number; total: number }) => void;
+  /** ✅ ใหม่: แจ้ง parent เมื่อจำนวนงาน/งานที่เสร็จเปลี่ยน */
+  onOrdersChanged?: (
+    listQueueId: number,
+    summary: { done: number; total: number }
+  ) => void;
 };
 
 export default function QueueModal(props: Props) {
   const {
-    isOpen, editMode,
-    title, setTitle,
-    faculty, setFaculty,
-    staffId, setStaffId,
-    staffStatusId, setStaffStatusId,
-    courseStatusId, setCourseStatusId,
-    wordfileSubmit, setWordfileSubmit,
-    infoSubmit, setInfoSubmit,
-    infoSubmit14days, setInfoSubmit14days,
-    timeRegister, setTimeRegister,
-    onWeb, setOnWeb,
-    appointmentDateAw, setAppointmentDateAw,
-    dateLeft, setDateLeft,
-    note, setNote,
-    facultyList, courseStatusList, staffStatusList,
-    onSubmit, onClose,
-    orderMappings, setOrderMappings, currentId, onToggleOrder, token,
+    isOpen,
+    editMode,
+    title,
+    setTitle,
+    faculty,
+    setFaculty,
+    staffId,
+    setStaffId,
+    staffStatusId,
+    setStaffStatusId,
+    courseStatusId,
+    setCourseStatusId,
+    wordfileSubmit,
+    setWordfileSubmit,
+    infoSubmit,
+    setInfoSubmit,
+    infoSubmit14days,
+    setInfoSubmit14days,
+    timeRegister,
+    setTimeRegister,
+    onWeb,
+    setOnWeb,
+    appointmentDateAw,
+    setAppointmentDateAw,
+    dateLeft,
+    setDateLeft,
+    note,
+    setNote,
+    facultyList,
+    courseStatusList,
+    staffStatusList,
+    onSubmit,
+    onClose,
+    orderMappings,
+    setOrderMappings,
+    currentId,
+    onToggleOrder,
+    token,
     onOrdersChanged,
   } = props;
 
@@ -104,6 +151,14 @@ export default function QueueModal(props: Props) {
   const textareaBase =
     "rounded-2xl px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none border border-gray-200 text-gray-400 placeholder:text-gray-400";
 
+
+  // ค่า progress สำหรับ header การ์ดสรุป (ถ้าจะโชว์)
+  const totalOrders = orderMappings.length;
+  const doneOrders = orderMappings.filter((o) => o.checked).length;
+  const percent = totalOrders
+    ? Math.round((doneOrders / totalOrders) * 100)
+    : 0;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm p-4">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl p-6 sm:p-8 overflow-auto max-h-[90vh] relative">
@@ -139,7 +194,10 @@ export default function QueueModal(props: Props) {
               onChange={(e) => setFaculty(e.target.value)}
               required
             >
-              <option value="">-- เลือกคณะ --</option>
+
+              {/*<option value="">-- Select Faculty --</option>*/}*
+              <option value="">-- เลือกคณะ --</option>*
+
               {facultyList.map((fac) => (
                 <option key={fac.id} value={String(fac.id)}>
                   {fac.nameTH} ({fac.code})
@@ -150,7 +208,11 @@ export default function QueueModal(props: Props) {
 
           {/* Staff ID */}
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">รหัสประจำตัวเจ้าหน้าที่</span>
+
+            <span className="text-sm font-semibold">
+              รหัสประจำตัวเจ้าหน้าที่
+            </span>
+
             <input
               type="number"
               className={inputBase}
@@ -243,17 +305,6 @@ export default function QueueModal(props: Props) {
             inputBase={inputBase}
           />
 
-          {/* Date left */}
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">เหลือเวลา (วัน)</span>
-            <input
-              type="number"
-              min={0}
-              className={inputBase}
-              value={dateLeft}
-              onChange={(e) => setDateLeft(Number(e.target.value))}
-            />
-          </label>
 
           {/* Orders */}
           {orderMappings?.length > 0 && (
@@ -267,13 +318,25 @@ export default function QueueModal(props: Props) {
                   type="button"
                   onClick={() => setOrderView("all")}
                   className={`flex items-center justify-between rounded-3xl px-4 py-4 shadow-sm border transition
-                    ${orderView === "all" ? "bg-purple-50 border-purple-200" : "bg-white border-gray-200 hover:bg-gray-50"}`}
+
+                    ${
+                      orderView === "all"
+                        ? "bg-purple-50 border-purple-200"
+                        : "bg-white border-gray-200 hover:bg-gray-50"
+                    }`}
+
                 >
                   <span className="flex items-center gap-2 text-sm">
-                    <img src="/queuecard/list.png" alt="list icon" className="h-5 w-5" />
+                    <img
+                      src="/queuecard/list.png"
+                      alt="list icon"
+                      className="h-5 w-5"
+                    />
                     ทั้งหมด
                   </span>
-                  <span className="text-base font-semibold">{pendingOrders}</span>
+                  <span className="text-base font-semibold">
+                    {orderMappings.length}
+                  </span>
                 </button>
 
                 {/* เสร็จแล้ว */}
@@ -281,65 +344,90 @@ export default function QueueModal(props: Props) {
                   type="button"
                   onClick={() => setOrderView("done")}
                   className={`flex items-center justify-between rounded-3xl px-4 py-4 shadow-sm border transition
-                    ${orderView === "done" ? "bg-purple-50 border-purple-200" : "bg-white border-gray-200 hover:bg-gray-50"}`}
+                    ${
+                      orderView === "done"
+                        ? "bg-purple-50 border-purple-200"
+                        : "bg-white border-gray-200 hover:bg-gray-50"
+                    }`}
                 >
                   <span className="flex items-center gap-2 text-sm">
-                    <img src="/queuecard/checked.png" alt="checked icon" className="h-5 w-5" />
+                    <img
+                      src="/queuecard/checked.png"
+                      alt="checked icon"
+                      className="h-5 w-5"
+                    />
                     เสร็จแล้ว
                   </span>
-                  <span className="text-base font-semibold">{doneOrders}</span>
+                  <span className="text-base font-semibold">
+                    {orderMappings.filter((o) => o.checked).length}
+                  </span>
                 </button>
               </div>
 
               {/* รายการงาน */}
               <div className="space-y-3">
-                {orderMappings
-                  .filter((o) => (orderView === "done" ? o.checked : !o.checked))
-                  .map((om) => {
-                    const id = `order-${String(om.id)}`;
-                    const checked = !!om.checked;
-                    return (
-                      <label key={id} htmlFor={id} className="flex items-center gap-3 cursor-pointer">
-                        {/* วงกลม */}
-                        <span
-                          className={`relative inline-flex h-5 w-5 items-center justify-center rounded-full border
-                            ${checked ? "border-[#8741D9]" : "border-gray-300"}`}
-                        >
-                          <input
-                            id={id}
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              const isChecked = e.target.checked;
-                              setOrderMappings((prev) => {
-                                const next = prev.map((o) =>
-                                  o.id === om.id ? { ...o, checked: isChecked } : o
-                                );
-                                // แจ้ง parent ในจุดนี้ก็ได้ (guard ใน useEffect กันลูปอยู่แล้ว)
-                                if (currentId && onOrdersChanged) {
-                                  const s = summarize(next);
-                                  onOrdersChanged(currentId, s);
-                                  prevSummaryRef.current = { id: currentId, ...s };
-                                }
-                                return next;
-                              });
-                              if (currentId && om.order?.id) {
-                                onToggleOrder(currentId, om.order.id, isChecked);
-                              }
-                            }}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            aria-describedby={`${id}-label`}
-                          />
-                          {checked && <span className="h-2.5 w-2.5 rounded-full bg-[#8741D9]" />}
-                        </span>
+               
+             {orderMappings
+          .filter((o) => (orderView === "done" ? o.checked : !o.checked))
+          .map((om) => {
+            const id = `order-${om.id}`;
+            const checked = !!om.checked;
+            return (
+              <div key={id} className="flex items-center justify-between rounded-3xl px-4 py-4 shadow-sm ">
+                <label htmlFor={id} className="flex items-center gap-3 cursor-pointer flex-1">
+                  <span className={`relative inline-flex h-5 w-5 items-center justify-center rounded-full border ${checked ? "border-[#8741D9]" : "border-gray-300"}`}>
+                    <input
+                      id={id}
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        setOrderMappings(prev => {
+                          const next = prev.map(o => o.id === om.id ? { ...o, checked: isChecked } : o);
+                          if (currentId && onOrdersChanged) onOrdersChanged(currentId, summarize(next));
+                          return next;
+                        });
+                        if (currentId && om.order?.id) onToggleOrder(currentId, om.order.id, isChecked);
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    {checked && <span className="h-2.5 w-2.5 rounded-full bg-[#8741D9]" />}
+                  </span>
+                  <span className="text-sm text-gray-900">{om.order?.title}</span>
+                </label>
 
-                        <span id={`${id}-label`} className="text-sm text-gray-900">
-                          {om.order?.title}
-                        </span>
-                      </label>
-                    );
-                  })}
+                {/* Delete Button - ลบได้ทันที ไม่ต้องติ๊ก */}
+                <button
+                  type="button"
+                  className="text-red-500 hover:text-red-700 text-sm font-semibold"
+                  onClick={async () => {
+                    if (!om.order?.id) return;
+                    try {
+                      const res = await fetch(`http://localhost:8080/api/order/${om.order.id}`, {
+                        method: "DELETE",
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      if (!res.ok) throw new Error("Delete order failed");
+                      setOrderMappings(prev => {
+                        const next = prev.filter(o => o.id !== om.id);
+                        if (currentId && onOrdersChanged) onOrdersChanged(currentId, summarize(next));
+                        return next;
+                      });
+                    } catch (err) {
+                      console.error(err);
+                      alert("ลบ Order ไม่สำเร็จ");
+                    }
+                  }}
+                >
+                  ลบ
+                </button>
               </div>
+            );
+          })}
+              </div>
+
+
+
 
               {/* ปุ่มเพิ่มเตือนความจำ */}
               <div className="mt-6">
@@ -355,7 +443,9 @@ export default function QueueModal(props: Props) {
               {showAddOrder && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
                   <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-6">
-                    <h2 className="text-lg font-semibold mb-4">เตือนความจำใหม่</h2>
+                    <h2 className="text-lg font-semibold mb-4">
+                      เตือนความจำใหม่
+                    </h2>
                     <input
                       type="text"
                       value={newOrderTitle}
@@ -380,18 +470,25 @@ export default function QueueModal(props: Props) {
                         onClick={async () => {
                           if (!newOrderTitle || !currentId) return;
                           try {
-                            const res = await fetch("http://localhost:8080/api/order", {
-                              method: "POST",
-                              headers: {
-                                "Content-Type": "application/json",
-                                Authorization: `Bearer ${token}`,
-                              },
-                              credentials: "include",
-                              body: JSON.stringify({ list_queue_id: currentId, title: newOrderTitle }),
-                            });
+                            const res = await fetch(
+                              "http://localhost:8080/api/order",
+                              {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  Authorization: `Bearer ${token}`,
+                                },
+                                credentials: "include",
+                                body: JSON.stringify({
+                                  list_queue_id: currentId,
+                                  title: newOrderTitle,
+                                }),
+                              }
+                            );
                             if (!res.ok) throw new Error("Create order failed");
                             const newOrder = await res.json();
 
+                            // ใช้ randomUUID ไม่ต้องพึ่ง uuid pkg
                             const localId =
                               typeof crypto?.randomUUID === "function"
                                 ? crypto.randomUUID()
@@ -404,7 +501,10 @@ export default function QueueModal(props: Props) {
                                   id: newOrder.mapping_id ?? localId,
                                   order_id: newOrder.id,
                                   checked: false,
-                                  order: { id: newOrder.id, title: newOrder.title },
+                                  order: {
+                                    id: newOrder.id,
+                                    title: newOrder.title,
+                                  },
                                 },
                               ];
                               if (currentId && onOrdersChanged) {
@@ -466,6 +566,8 @@ export default function QueueModal(props: Props) {
   );
 }
 
+
+
 function DateInput({
   label,
   value,
@@ -477,17 +579,43 @@ function DateInput({
   onChange: (v: string) => void;
   inputBase: string;
 }) {
+  const date = value ? new Date(value) : null;
+
+  const CustomInput = React.forwardRef<HTMLInputElement, any>(
+    ({ value, onClick }, ref) => (
+      <div className="relative w-full">
+        <input
+          readOnly
+          value={value}
+          onClick={onClick}
+          ref={ref}
+          className={`${inputBase} w-full pr-10 border rounded-3xl py-2 px-3`}
+        />
+        <FaRegCalendarAlt
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
+          onClick={onClick}
+        />
+      </div>
+    )
+  );
+
   return (
-    <label className="flex flex-col gap-1">
+    <label className="flex flex-col gap-1 w-full">
       <span className="text-sm font-semibold">{label}</span>
-      <input
-        type="datetime-local"
-        placeholder="dd/mm/yyyy, --:--"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`${inputBase} [&::-webkit-datetime-edit]:text-gray-400`}
-        required
+      <DatePicker
+        selected={date}
+        onChange={(date: Date | null) => {
+          if (date) {
+            onChange(date.toISOString().split("T")[0]);
+          } else {
+            onChange("");
+          }
+        }}
+        dateFormat="dd/MM/yyyy"
+        customInput={<CustomInput />}
       />
     </label>
   );
 }
+
+

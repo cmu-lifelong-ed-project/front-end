@@ -1,44 +1,36 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, X, Search as SearchIcon } from "lucide-react"; // NEW
-import { getStatusColorByName, hexToRgba } from "@/lib/ui";
-import type { CourseStatus } from "../../types/queue";
+import { ChevronDown, ChevronUp, Search as SearchIcon } from "lucide-react";
+import type { CourseStatus } from "@/types/api/status";
 
-export default function FilterDropdown({
+export default function FilterSearchBar({
   items,
   onChange,
-  onSearch,                         //callback ส่งคำค้น
+  onSearch, //callback ส่งคำค้น
   label = "สถานะรายวิชา",
 }: {
   items: CourseStatus[];
-  onChange?: (selected: string[]) => void; // selected status names
-  onSearch?: (q: string) => void;   
+  onChange?: (selectedIds: number[]) => void;
+  onSearch?: (q: string) => void;
   label?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [query, setQuery] = useState("");         
+  const [selected, setSelected] = useState<number[]>([]);
+  const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  const doSearch = () => onSearch?.(query.trim()); 
+  const doSearch = () => onSearch?.(query.trim());
 
-  const toggleOption = (value: string) => {
+  const toggleOption = (id: number) => {
     setSelected((prev) => {
-      const next = prev.includes(value)
-        ? prev.filter((v) => v !== value)
-        : [...prev, value];
+      const next = prev.includes(id)
+        ? prev.filter((v) => v !== id)
+        : [...prev, id];
       onChange?.(next);
       return next;
     });
   };
 
-  const removeOne = (value: string) => {
-    setSelected((prev) => {
-      const next = prev.filter((v) => v !== value);
-      onChange?.(next);
-      return next;
-    });
-  };
   // Close on outside click
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -110,8 +102,8 @@ export default function FilterDropdown({
             onClick={() => {
               setSelected([]);
               onChange?.([]);
-              setQuery("");         // เคลียร์ช่องค้นหา
-              onSearch?.("");       // แจ้งให้ล้างผลค้นหา
+              setQuery(""); // เคลียร์ช่องค้นหา
+              onSearch?.(""); // แจ้งให้ล้างผลค้นหา
             }}
           >
             ลบตัวกรอง
@@ -126,13 +118,18 @@ export default function FilterDropdown({
           role="listbox"
           aria-label={`${label} filters`}
         >
-          <div className="px-4 py-2 text-sm text-gray-500 font-medium">ตัวกรอง</div>
+          <div className="px-4 py-2 text-sm text-gray-500 font-medium">
+            ตัวกรอง
+          </div>
           <ul className="max-h-64 overflow-auto px-3 pb-3 space-y-2">
             {items.map((opt) => {
               const id = `status-${opt.id}`;
-              const checked = selected.includes(opt.status);
+              const checked = selected.includes(opt.id);
               return (
-                <li key={opt.id} className="px-2 py-1 hover:bg-gray-50 rounded-md">
+                <li
+                  key={opt.id}
+                  className="px-2 py-1 hover:bg-gray-50 rounded-md"
+                >
                   <label
                     htmlFor={id}
                     className="flex items-center gap-3 cursor-pointer select-none text-sm text-gray-800"
@@ -142,7 +139,7 @@ export default function FilterDropdown({
                       type="checkbox"
                       className="h-4 w-4 rounded border border-gray-300 accent-[#8741D9]"
                       checked={checked}
-                      onChange={() => toggleOption(opt.status)}
+                      onChange={() => toggleOption(opt.id)}
                     />
                     <span>{opt.status}</span>
                   </label>
