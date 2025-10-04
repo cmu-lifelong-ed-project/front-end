@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect,useRef, useState } from "react";
 import { CourseStatus, StaffStatus } from "@/types/api/status";
 import { Faculty } from "@/types/api/faculty";
 import { OrderMapping } from "@/types/api/order";
@@ -152,12 +152,7 @@ export default function QueueModal(props: Props) {
     "rounded-2xl px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none border border-gray-200 text-gray-400 placeholder:text-gray-400";
 
 
-  // ค่า progress สำหรับ header การ์ดสรุป (ถ้าจะโชว์)
-  const totalOrders = orderMappings.length;
-  const doneOrders = orderMappings.filter((o) => o.checked).length;
-  const percent = totalOrders
-    ? Math.round((doneOrders / totalOrders) * 100)
-    : 0;
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm p-4">
@@ -617,5 +612,3 @@ function DateInput({
     </label>
   );
 }
-
-
