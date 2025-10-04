@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { Check, ChevronDown, ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
 
 type RoleKey = "admin" | "staff" | "LE" | "officer";
 
-// เพิ่ม LE และ officer ใน ROLE_ITEMS, ROLE_LABEL, ROLE_HEADING
 const ROLE_ITEMS: Record<RoleKey, string[]> = {
   admin: ["แก้ไขการตั้งค่าเว็บไซต์", "ข้อมูลเชิงลึก", "การจัดการสมาชิกบัญชี"],
   staff: ["ข้อมูลเชิงลึก"],
@@ -31,24 +30,72 @@ const ROLE_HEADING: Record<RoleKey, string> = {
 
 const isValidEmail = (value: string) => /^[^\s@]+@cmu\.ac\.th$/i.test(value.trim());
 
-export default function AddUserPage() {
+interface Faculty {
+  id: number;
+  nameTH: string;
+}
+
+export default function EditUserPage() {
   const [role, setRole] = useState<RoleKey>("admin");
   const [email, setEmail] = useState("");
-  const [organization, setOrganization] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [token, setToken] = useState<string | undefined>(undefined);
 
+  const [facultyList, setFacultyList] = useState<Faculty[]>([]);
+  const [facultyId, setFacultyId] = useState<number | null>(null);
+
   const router = useRouter();
+  const params = useSearchParams();
 
   // อ่าน token จาก cookie
   useEffect(() => {
     const t = getCookie("backend-api-token");
-    if (t) setToken(t);
+    if (typeof t === "string") setToken(t);
   }, []);
+
+  // ถ้ามี query ?email= → โหมดแก้ไข
+  useEffect(() => {
+    const preset = params.get("email");
+    if (preset) {
+      setEmail(preset);
+      setEditMode(true);
+      fetchUserFaculty(preset);
+    }
+  }, [params]);
+
+  // โหลดรายชื่อ faculty
+  useEffect(() => {
+    if (!token) return;
+
+    fetch("http://localhost:8080/api/faculty", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Faculty list from API:", data);
+        setFacultyList(data);
+      })
+      .catch((err) => console.error("โหลด faculty ไม่สำเร็จ:", err));
+  }, [token]);
+
+  const fetchUserFaculty = async (email: string) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/user/${email}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("ไม่สามารถดึงข้อมูลผู้ใช้ได้");
+      const data = await res.json();
+      setRole(data.role);
+      setFacultyId(data.facultyId ?? null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleSave = async () => {
     const value = email.trim();
-
     if (!value) {
       setError("กรุณากรอกอีเมล CMU");
       return;
@@ -63,22 +110,37 @@ export default function AddUserPage() {
     }
 
     try {
-      // ส่ง POST แบบไม่ encode @
-      const res = await fetch(`http://localhost:8080/api/user/${value}/${role}`, {
+      // อัพเดท role
+      const resRole = await fetch(`http://localhost:8080/api/user/${value}/${role}`, {
         method: "POST",
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ organization_name_th: organization }),
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!resRole.ok) throw new Error("อัพเดท role ไม่สำเร็จ");
 
-      if (!res.ok) throw new Error("เพิ่มผู้ใช้ไม่สำเร็จ");
+      // อัพเดท facultyId + organization_name_th ถ้ามี
+      if (facultyId !== null) {
+        const selectedFaculty = facultyList.find((f) => f.id === facultyId);
+        const organization_name_th = selectedFaculty?.nameTH ?? "";
 
-      router.push("/setting"); // กลับไปหน้ารายชื่อผู้ใช้
+        const resFaculty = await fetch(`http://localhost:8080/api/user/updatef`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            email: value,
+            facultyId,
+            organization_name_th,
+          }),
+        });
+        if (!resFaculty.ok) throw new Error("อัพเดท Faculty ไม่สำเร็จ");
+      }
+
+      router.push("/setting");
     } catch (err) {
       console.error(err);
-      setError("เกิดข้อผิดพลาดในการบันทึกผู้ใช้");
+      setError("เกิดข้อผิดพลาดในการอัพเดทข้อมูล");
     }
   };
 
@@ -98,21 +160,25 @@ export default function AddUserPage() {
           </button>
 
           <h1 className="mb-4 text-base font-semibold text-gray-700 sm:text-lg">
-            เพิ่มผู้ใช้ใหม่
+            {editMode ? "แก้ไขสิทธิ์ผู้ใช้" : "เพิ่มผู้ใช้ใหม่"}
           </h1>
 
           <div className="rounded-3xl border border-gray-100 bg-[#F8F7FF] p-4 sm:p-6">
             {/* ประเภทสิทธิ์ */}
             <div className="mb-6">
-              <label className="mb-2 block text-sm font-medium text-gray-700">ประเภทสิทธิ์</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                ประเภทสิทธิ์
+              </label>
               <div className="relative inline-block w-full sm:w-auto">
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as RoleKey)}
                   className="w-full appearance-none rounded-full border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm font-medium text-gray-700 shadow-sm hover:border-gray-300 focus:border-[#6C63FF] focus:outline-none"
                 >
-                  {(["admin", "staff", "LE", "officer"] as RoleKey[]).map((k) => (
-                    <option key={k} value={k}>{ROLE_LABEL[k]}</option>
+                  {(Object.keys(ROLE_LABEL) as RoleKey[]).map((k) => (
+                    <option key={k} value={k}>
+                      {ROLE_LABEL[k]}
+                    </option>
                   ))}
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -120,7 +186,7 @@ export default function AddUserPage() {
             </div>
 
             {/* สิทธิ์ที่ได้รับ */}
-            <div className="mb-8">
+            <div className="mb-6">
               <div className="mb-2 text-sm font-medium text-gray-700">{ROLE_HEADING[role]}</div>
               <div className="space-y-3 pl-0 sm:pl-6">
                 {ROLE_ITEMS[role].map((perm) => (
@@ -129,31 +195,41 @@ export default function AddUserPage() {
               </div>
             </div>
 
-            {/* อีเมล */}
+            {/* Faculty */}
+            <div className="mb-6">
+              <label className="mb-2 block text-sm font-medium text-gray-700">คณะ</label>
+              <select
+                value={facultyId ?? ""}
+                onChange={(e) => setFacultyId(Number(e.target.value))}
+                className="w-full rounded-full border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm hover:border-gray-400 focus:border-[#6C63FF] focus:outline-none"
+              >
+                <option value="">-- เลือกคณะ --</option>
+                {facultyList.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.nameTH}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* อีเมล CMU */}
             <div className="mt-2">
               <div className="mb-2 text-sm font-medium text-gray-700">อีเมล CMU Account</div>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); if (error) setError(null); }}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder="example@cmu.ac.th"
-                className="w-full rounded-full border bg-white px-5 py-3 text-sm text-gray-700 placeholder-gray-400 focus:border-[#6C63FF] focus:outline-none border-gray-300"
+                disabled={editMode}
+                className={`w-full rounded-full border bg-white px-5 py-3 text-sm text-gray-700 placeholder-gray-400 focus:border-[#6C63FF] focus:outline-none ${
+                  editMode ? "border-gray-200 text-gray-500" : "border-gray-300"
+                }`}
               />
+              {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
             </div>
-
-            {/* คณะ/หน่วยงาน */}
-            <div className="mt-4">
-              <div className="mb-2 text-sm font-medium text-gray-700">คณะ / หน่วยงาน</div>
-              <input
-                type="text"
-                value={organization}
-                onChange={(e) => setOrganization(e.target.value)}
-                placeholder="คณะ / หน่วยงาน"
-                className="w-full rounded-full border bg-white px-5 py-3 text-sm text-gray-700 placeholder-gray-400 focus:border-[#6C63FF] focus:outline-none border-gray-300"
-              />
-            </div>
-
-            {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
           </div>
 
           <div className="mt-6 flex flex-col items-stretch sm:flex-row sm:justify-center">
@@ -163,7 +239,7 @@ export default function AddUserPage() {
               disabled={!canSave}
               className="w-full rounded-full bg-[#6C63FF] px-6 py-3 text-sm font-semibold text-white shadow-md hover:opacity-95 active:scale-[.99] disabled:opacity-40 sm:w-auto"
             >
-              บันทึกข้อมูล
+              {editMode ? "บันทึกการเปลี่ยนแปลง" : "บันทึกข้อมูล"}
             </button>
           </div>
         </div>
