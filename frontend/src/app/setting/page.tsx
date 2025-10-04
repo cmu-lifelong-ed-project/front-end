@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-type RoleKey = "super_admin" | "admin";
+type RoleKey = "super_admin" | "admin" | "staff_lifelong";
 
 type User = {
   name?: string;
@@ -16,6 +16,7 @@ type User = {
 const ROLE_BADGE: Record<RoleKey, string> = {
   super_admin: "ซูเปอร์แอดมิน",
   admin: "แอดมิน",
+  staff_lifelong: "สตาฟ Lifelong",
 };
 
 const norm = (s: string) => s.trim().toLowerCase();
@@ -24,6 +25,9 @@ export default function SettingUsersPreview() {
   const [users, setUsers] = useState<User[]>([]);
   const [currentRole, setCurrentRole] = useState<RoleKey | undefined>(undefined);
   const [currentEmail, setCurrentEmail] = useState<string | undefined>(undefined);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -31,8 +35,11 @@ export default function SettingUsersPreview() {
       const raw = localStorage.getItem("users");
       const parsed: User[] = raw ? JSON.parse(raw) : [];
 
-      // ✅ แสดงเฉพาะ admin/super_admin
-      const onlyAdmins = parsed.filter((u) => u.role === "admin" || u.role === "super_admin");
+      // แสดง admin + super_admin + staff_lifelong
+      const onlyAdmins = parsed.filter(
+        (u) => u.role === "admin" || u.role === "super_admin" || u.role === "staff_lifelong"
+      );
+
 
       const sorted = [...onlyAdmins].sort((a, b) => {
         const ta = a.createdAt ? Date.parse(a.createdAt) : 0;
@@ -44,12 +51,10 @@ export default function SettingUsersPreview() {
       setUsers([]);
     }
 
-    // อ่าน role ผู้ใช้ที่ล็อกอิน (dev)
     try {
       const r = localStorage.getItem("current_role") as RoleKey | null;
       setCurrentRole(r ?? undefined);
     } catch {}
-    // ถ้ามีระบบเก็บอีเมลผู้ใช้ปัจจุบันไว้ (dev)
     try {
       const me = localStorage.getItem("current_email");
       if (me) setCurrentEmail(me);
@@ -61,7 +66,7 @@ export default function SettingUsersPreview() {
   const rows = useMemo(() => {
     return users.map((u) => {
       const displayName =
-        u.name?.trim()?.length ? u.name : (u.email?.split("@")[0] || "ผู้ใช้ใหม่");
+        u.name?.trim()?.length ? u.name : u.email?.split("@")[0] || "ผู้ใช้ใหม่";
       const roleKey = u.role as RoleKey | undefined;
       const roleLabel = roleKey ? ROLE_BADGE[roleKey] : "ไม่ทราบสิทธิ์";
       return { ...u, displayName, roleLabel };
@@ -85,23 +90,37 @@ export default function SettingUsersPreview() {
     router.push(`/setting/add-user?email=${encodeURIComponent(email)}`);
   };
 
-  const handleDelete = (email: string, e: React.MouseEvent) => {
+  // เปิดโมดัลยืนยัน
+  const handleDeleteClick = (email: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isSuperAdmin) {
       alert("คุณไม่มีสิทธิ์ลบผู้ใช้ (จำกัดเฉพาะ Super Admin)");
       return;
     }
-    if (!confirm(`ยืนยันการลบแอดมิน: ${email}?`)) return;
+    setPendingEmail(email);
+    setConfirmOpen(true);
+  };
+
+  // กดยืนยันในโมดัล
+  const confirmDelete = () => {
+    if (!pendingEmail) return;
 
     const current = [...users];
-    const target = current.find((u) => norm(u.email) === norm(email));
-    if (!target) return;
+    const target = current.find((u) => norm(u.email) === norm(pendingEmail));
+    if (!target) {
+      setConfirmOpen(false);
+      setPendingEmail(null);
+      return;
+    }
 
     // เช็ค super admin คนสุดท้าย
     const superAdmins = current.filter((u) => u.role === "super_admin");
-    const isTargetLastSuperAdmin = target.role === "super_admin" && superAdmins.length === 1;
+    const isTargetLastSuperAdmin =
+      target.role === "super_admin" && superAdmins.length === 1;
     if (isTargetLastSuperAdmin) {
       alert("ไม่สามารถลบ Super Admin คนสุดท้ายได้");
+      setConfirmOpen(false);
+      setPendingEmail(null);
       return;
     }
 
@@ -110,19 +129,38 @@ export default function SettingUsersPreview() {
       currentEmail &&
       superAdmins.length === 1 &&
       norm(superAdmins[0].email) === norm(currentEmail) &&
-      norm(email) === norm(currentEmail);
+      norm(pendingEmail) === norm(currentEmail);
 
     if (amISoleSuperAdmin) {
       alert("ไม่สามารถลบบัญชีตัวเองได้ เนื่องจากคุณเป็น Super Admin คนสุดท้าย");
+      setConfirmOpen(false);
+      setPendingEmail(null);
       return;
     }
 
-    const next = current.filter((u) => norm(u.email) !== norm(email));
+    const next = current.filter((u) => norm(u.email) !== norm(pendingEmail));
     setUsers(next);
     try {
       localStorage.setItem("users", JSON.stringify(next));
     } catch {}
+
+    setConfirmOpen(false);
+    setPendingEmail(null);
   };
+
+  const cancelDelete = () => {
+    setConfirmOpen(false);
+    setPendingEmail(null);
+  };
+
+  // ปิดด้วย ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cancelDelete();
+    };
+    if (confirmOpen) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmOpen]);
 
   return (
     <div className="min-h-screen w-full bg-[#F4EEFF] font-['Noto_Sans_Thai']">
@@ -138,7 +176,7 @@ export default function SettingUsersPreview() {
           </div>
 
           <div className="rounded-3xl border border-gray-100 bg-[#F8F7FF] p-4 sm:p-6">
-            {/* Header (ซ่อนบนมือถือเพื่อประหยัดที่) */}
+            {/* Header */}
             <div className="mb-3 hidden grid-cols-12 text-xs text-gray-500 sm:mb-4 sm:grid sm:text-sm">
               <div className="col-span-4">ชื่อ</div>
               <div className="col-span-4">อีเมล (CMU)</div>
@@ -171,7 +209,7 @@ export default function SettingUsersPreview() {
                           {u.roleLabel}
                         </span>
 
-                        {/* action (mobile แยกบรรทัด) */}
+                        {/* action */}
                         <div className="mt-2 flex items-center gap-2 sm:mt-0 sm:inline-flex sm:pl-2">
                           <button
                             title={isSuperAdmin ? "แก้ไขสิทธิ์" : "ต้องเป็น Super Admin"}
@@ -186,7 +224,7 @@ export default function SettingUsersPreview() {
                           </button>
                           <button
                             title={isSuperAdmin ? "ลบแอดมิน" : "ต้องเป็น Super Admin"}
-                            onClick={(e) => handleDelete(u.email, e)}
+                            onClick={(e) => handleDeleteClick(u.email, e)}
                             className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
                               isSuperAdmin
                                 ? "border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600"
@@ -220,6 +258,55 @@ export default function SettingUsersPreview() {
           </div>
         </div>
       </main>
+
+      {/* ===== Confirm Delete Modal ===== */}
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center"
+          aria-modal="true"
+          role="dialog"
+        >
+          {/* backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
+            onClick={cancelDelete}
+          />
+
+          {/* card */}
+          <div className="relative z-[101] w-[92%] max-w-md rounded-3xl bg-white p-6 shadow-xl sm:p-7">
+            {/* close */}
+            <button
+              onClick={cancelDelete}
+              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              aria-label="ปิด"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h2 className="mb-3 text-center text-base font-bold text-[#6C63FF]">
+              ยืนยันการลบแอดมิน
+            </h2>
+            <p className="mb-6 text-center text-[15px] text-gray-700">
+              {pendingEmail}
+            </p>
+
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={cancelDelete}
+                className="inline-flex min-w-[120px] items-center justify-center rounded-full bg-[#6C2CCF] px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-95 active:scale-[.99]"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="inline-flex min-w-[120px] items-center justify-center rounded-full bg-[#E6DFFF] px-5 py-2.5 text-sm font-semibold text-[#6C2CCF] shadow-sm hover:brightness-95 active:scale-[.99]"
+              >
+                ยืนยัน
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

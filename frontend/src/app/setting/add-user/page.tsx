@@ -5,22 +5,26 @@ import { Check, ChevronDown, ArrowLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 // ===== Types & Config =====
-type RoleKey = "super_admin" | "admin"; // 👈 ใช้เฉพาะแอดมินเท่านั้น
+type RoleKey = "super_admin" | "admin" | "staff_lifelong"; // ✅ เพิ่ม staff_lifelong
 
 const ROLE_ITEMS: Record<RoleKey, string[]> = {
   super_admin: ["แก้ไขการตั้งค่าเว็บไซต์", "การจัดการสมาชิกบัญชี", "ข้อมูลเชิงลึก"],
   admin: ["แก้ไขการตั้งค่าเว็บไซต์", "ข้อมูลเชิงลึก"],
+  staff_lifelong: ["ข้อมูลเชิงลึก"], 
 };
 
 const ROLE_LABEL: Record<RoleKey, string> = {
   super_admin: "Super Admin",
   admin: "Admin",
+  staff_lifelong: "Staff Lifelong", 
 };
 
 const ROLE_HEADING: Record<RoleKey, string> = {
   super_admin: "ซูเปอร์แอดมิน",
   admin: "แอดมิน",
+  staff_lifelong: "สตาฟ Lifelong",
 };
+
 
 type UserRow = {
   name?: string;
@@ -180,7 +184,7 @@ export default function AddUserPage() {
                   onChange={(e) => setRole(e.target.value as RoleKey)}
                   className="w-full appearance-none rounded-full border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm font-medium text-gray-700 shadow-sm hover:border-gray-300 focus:border-[#6C63FF] focus:outline-none"
                 >
-                  {(["admin", "super_admin"] as RoleKey[]).map((k) => (
+                  {(["admin", "super_admin", "staff_lifelong"] as RoleKey[]).map((k) => (
                     <option key={k} value={k}>
                       {ROLE_LABEL[k]}
                     </option>
