@@ -111,6 +111,38 @@ export default function QueueModal(props: Props) {
   const [newOrderTitle, setNewOrderTitle] = useState("");
   const [orderView, setOrderView] = useState<"all" | "done">("all");
 
+  // === Confirm delete (Popup) ===
+const [confirm, setConfirm] = useState<{ open: boolean; om: OrderMapping | null }>({
+  open: false,
+  om: null,
+});
+const [deletingId, setDeletingId] = useState<number | string | null>(null);
+
+async function confirmDeleteNow() {
+  const om = confirm.om;
+  if (!om?.order?.id) return;
+  try {
+    setDeletingId(om.id);
+    const res = await fetch(`http://localhost:8080/api/order/${om.order.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("Delete order failed");
+
+    setOrderMappings(prev => {
+      const next = prev.filter(o => o.id !== om.id);
+      if (currentId && onOrdersChanged) onOrdersChanged(currentId, summarize(next));
+      return next;
+    });
+    setConfirm({ open: false, om: null });
+  } catch (err) {
+    console.error(err);
+    alert("ลบ Order ไม่สำเร็จ");
+  } finally {
+    setDeletingId(null);
+  }
+}
+
   // ---- helper สรุปงาน ----
   function summarize(oms: OrderMapping[]) {
     const total = oms.length;
@@ -393,29 +425,49 @@ export default function QueueModal(props: Props) {
 
                 {/* Delete Button - ลบได้ทันที ไม่ต้องติ๊ก */}
                 <button
-                  type="button"
-                  className="text-red-500 hover:text-red-700 text-sm font-semibold"
-                  onClick={async () => {
-                    if (!om.order?.id) return;
-                    try {
-                      const res = await fetch(`http://localhost:8080/api/order/${om.order.id}`, {
-                        method: "DELETE",
-                        headers: { Authorization: `Bearer ${token}` },
-                      });
-                      if (!res.ok) throw new Error("Delete order failed");
-                      setOrderMappings(prev => {
-                        const next = prev.filter(o => o.id !== om.id);
-                        if (currentId && onOrdersChanged) onOrdersChanged(currentId, summarize(next));
-                        return next;
-                      });
-                    } catch (err) {
-                      console.error(err);
-                      alert("ลบ Order ไม่สำเร็จ");
-                    }
-                  }}
-                >
-                  ลบ
-                </button>
+                type="button"
+                className="text-red-500 hover:text-red-700 text-sm font-semibold"
+                onClick={() => setConfirm({ open: true, om })}    // <-- เปิดป๊อปอัพแทน
+              >
+                ลบ
+              </button>
+              {confirm.open && (
+              <div className="fixed inset-0 z-[999] flex items-center justify-center">
+                {/* Backdrop */}
+                <div
+                  className="absolute inset-0 bg-black/40"
+                  onClick={() => setConfirm({ open: false, om: null })}
+                />
+                {/* Card */}
+                <div className="relative mx-4 w-full max-w-md rounded-[24px] bg-white p-6 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)]">
+                  <h2 className="mb-2 text-center text-[15px] font-semibold text-[#8741D9]">
+                    ยืนยันการลบเตือนความจำ
+                  </h2>
+                  <p className="mb-6 text-center text-[15px] text-gray-700">
+                    {confirm.om?.order?.title || "Example"}
+                  </p>
+
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      type="button"
+                      className="rounded-full px-6 py-2 text-sm font-semibold text-white bg-[#8741D9]"
+                      onClick={() => setConfirm({ open: false, om: null })}
+                      disabled={deletingId !== null}
+                    >
+                      ยกเลิก
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-full px-6 py-2 text-sm font-semibold text-[#5C2D91] bg-[#E9D7FE] disabled:opacity-70"
+                      onClick={confirmDeleteNow}
+                      disabled={deletingId !== null}
+                    >
+                      {deletingId !== null ? "กำลังลบ..." : "ยืนยัน"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
               </div>
             );
           })}
