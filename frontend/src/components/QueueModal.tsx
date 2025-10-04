@@ -111,20 +111,35 @@ export default function QueueModal(props: Props) {
   const [newOrderTitle, setNewOrderTitle] = useState("");
   const [orderView, setOrderView] = useState<"all" | "done">("all");
 
-  // สรุปจำนวนงานเสร็จ/ทั้งหมด
+  // ---- helper สรุปงาน ----
   function summarize(oms: OrderMapping[]) {
     const total = oms.length;
     const done = oms.filter((o) => o.checked).length;
     return { done, total };
   }
 
-  // แจ้ง parent เมื่อ modal ผูกกับคิว (เปิด/เปลี่ยนคิว)
+  // ---- summary ใช้ซ้ำ ----
+  const totalOrders = orderMappings.length;
+  const doneOrders = orderMappings.filter((o) => o.checked).length;
+  const pendingOrders = totalOrders - doneOrders;
+  const percent = totalOrders ? Math.round((doneOrders / totalOrders) * 100) : 0;
+
+  // ✅ กันลูป: เรียก parent เฉพาะเมื่อ summary เปลี่ยนจริง ๆ
+  const prevSummaryRef = useRef<{ id: number | null; done: number; total: number } | null>(null);
   useEffect(() => {
-    if (currentId && onOrdersChanged) {
-      onOrdersChanged(currentId, summarize(orderMappings));
+    if (!currentId || !onOrdersChanged) return;
+
+    const prev = prevSummaryRef.current;
+    const next = { id: currentId, done: doneOrders, total: totalOrders };
+
+    const changed =
+      !prev || prev.id !== next.id || prev.done !== next.done || prev.total !== next.total;
+
+    if (changed) {
+      prevSummaryRef.current = next;
+      onOrdersChanged(currentId, { done: doneOrders, total: totalOrders });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentId]);
+  }, [currentId, doneOrders, totalOrders, onOrdersChanged]);
 
   if (!isOpen) return null;
 
@@ -135,6 +150,7 @@ export default function QueueModal(props: Props) {
     "rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm border border-gray-200 text-gray-400";
   const textareaBase =
     "rounded-2xl px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none border border-gray-200 text-gray-400 placeholder:text-gray-400";
+
 
   // ค่า progress สำหรับ header การ์ดสรุป (ถ้าจะโชว์)
   const totalOrders = orderMappings.length;
@@ -157,7 +173,7 @@ export default function QueueModal(props: Props) {
           }}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"
         >
-          {/* Title ชื่อเรื่อง */}
+          {/* Title */}
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold">ชื่อเรื่อง</span>
             <input
@@ -169,7 +185,7 @@ export default function QueueModal(props: Props) {
             />
           </label>
 
-          {/* Faculty คณะ */}
+          {/* Faculty */}
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold">คณะ</span>
             <select
@@ -178,8 +194,10 @@ export default function QueueModal(props: Props) {
               onChange={(e) => setFaculty(e.target.value)}
               required
             >
+
               {/*<option value="">-- Select Faculty --</option>*/}*
               <option value="">-- เลือกคณะ --</option>*
+
               {facultyList.map((fac) => (
                 <option key={fac.id} value={String(fac.id)}>
                   {fac.nameTH} ({fac.code})
@@ -188,11 +206,13 @@ export default function QueueModal(props: Props) {
             </select>
           </label>
 
-          {/* Staff ID รหัสเจ้าหน้าที่*/}
+          {/* Staff ID */}
           <label className="flex flex-col gap-1">
+
             <span className="text-sm font-semibold">
               รหัสประจำตัวเจ้าหน้าที่
             </span>
+
             <input
               type="number"
               className={inputBase}
@@ -202,7 +222,7 @@ export default function QueueModal(props: Props) {
             />
           </label>
 
-          {/* Staff Status สถานะเจ้าหน้าที่ */}
+          {/* Staff Status */}
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold">สถานะเจ้าหน้าที่</span>
             <select
@@ -220,7 +240,7 @@ export default function QueueModal(props: Props) {
             </select>
           </label>
 
-          {/* Course Status สถานะรายวิชา */}
+          {/* Course Status */}
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold">สถานะรายวิชา</span>
             <select
@@ -285,24 +305,26 @@ export default function QueueModal(props: Props) {
             inputBase={inputBase}
           />
 
+
           {/* Orders */}
           {orderMappings?.length > 0 && (
             <div className="md:col-span-2">
-              {/* Header */}
               <h3 className="text-sm font-semibold mb-2">เตือนความจำ</h3>
 
-              {/* การ์ดสรุป: ทั้งหมด / เสร็จแล้ว */}
+              {/* การ์ดสรุป */}
               <div className="mb-4 grid grid-cols-2 gap-3">
-                {/* ทั้งหมด */}
+                {/* ทั้งหมด (งานค้าง) */}
                 <button
                   type="button"
                   onClick={() => setOrderView("all")}
                   className={`flex items-center justify-between rounded-3xl px-4 py-4 shadow-sm border transition
+
                     ${
                       orderView === "all"
                         ? "bg-purple-50 border-purple-200"
                         : "bg-white border-gray-200 hover:bg-gray-50"
                     }`}
+
                 >
                   <span className="flex items-center gap-2 text-sm">
                     <img
@@ -342,7 +364,7 @@ export default function QueueModal(props: Props) {
                 </button>
               </div>
 
-              {/* รายการงาน: all = แสดงงานค้าง / done = แสดงงานเสร็จ */}
+              {/* รายการงาน */}
               <div className="space-y-3">
                
              {orderMappings
@@ -486,7 +508,9 @@ export default function QueueModal(props: Props) {
                                 },
                               ];
                               if (currentId && onOrdersChanged) {
-                                onOrdersChanged(currentId, summarize(next));
+                                const s = summarize(next);
+                                onOrdersChanged(currentId, s);
+                                prevSummaryRef.current = { id: currentId, ...s };
                               }
                               return next;
                             });

@@ -4,6 +4,8 @@ body {
   font-family: 'Manrope', sans-serif;
 }
 
+html, body { min-height: 100%; }
+body { background: #F4EEFF; }
 
 
 
