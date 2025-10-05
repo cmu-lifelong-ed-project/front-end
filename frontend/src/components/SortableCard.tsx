@@ -177,12 +177,7 @@ export default function SortableCard({
               value={item.staff_status?.status ?? "-"}
               labelPad="ml-3"
             />
-            <Line
-              icon="/User Status.png"
-              label="สถานะ ผู้ใช้"
-              value={"-"}
-              labelPad="ml-10"
-            />
+        
           </div>
 
           <div className="md:col-span-4 w-full">

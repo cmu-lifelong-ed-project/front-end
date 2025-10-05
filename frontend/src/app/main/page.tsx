@@ -19,6 +19,9 @@ import { Plus } from "lucide-react";
 import SortableCard from "@/components/SortableCard";
 import QueueModal from "../../components/QueueModal";
 import SuccessOverlay from "@/components/ui/SuccessOverlay";
+import StatusSummary from "@/components/StatusSummary";
+
+
 import {
   ListQueue,
   CreateListQueueInput,
@@ -355,6 +358,8 @@ export default function QueuePage() {
             onSearch={(q) => setSearchTitle(q)}
           />
         </div>
+
+        <StatusSummary courseStatusList={courseStatusList} cards={cards} />
 
         <QueueModal
           isOpen={showModal}
