@@ -27,7 +27,7 @@ import {
 import { Faculty } from "@/types/api/faculty";
 import { OrderMapping } from "@/types/api/order";
 import { CourseStatus, StaffStatus } from "@/types/api/status";
-import { toDatetimeLocal } from "@/lib/ui";
+import { toDatetimeLocal } from "@/lib/datetime";
 import { getCookie } from "@/lib/cookie";
 import {
   getUnfinishedListQueues,
@@ -320,11 +320,6 @@ export default function QueuePage() {
         : await getListQueuesByCourseStatus(ids, token);
     setCards(listqueue);
   }
-
-
-
-
-
 
   return (
     <div className={`${notoSansThai.className} bg-[#F8F4FF] min-h-screen`}>

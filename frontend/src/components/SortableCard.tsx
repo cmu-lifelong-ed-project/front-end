@@ -115,10 +115,7 @@ export default function SortableCard({
           </div>
 
           <div className="justify-self-end">
-            <DateLeftCountdown
-              initialDays={item.date_left}
-              colorHex={mainColor}
-            />
+            <DateLeftCountdown deadlineISO={item.on_web} colorHex={mainColor} />
           </div>
         </div>
 
