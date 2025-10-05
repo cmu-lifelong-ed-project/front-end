@@ -1,18 +1,33 @@
-// src/middleware.ts
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { getUserEdge } from "@/lib/api/user";
 
 const AUTH_COOKIE = "backend-api-token";
+
 const PUBLIC_PATHS = ["/signin"];
 const PRIVATE_PATHS = ["/main", "/profile"];
+const ADMIN_ONLY_PATHS = [
+  "/setting",
+  "/setting/add-user",
+  "/setting/edit-user",
+];
 
 const isPublic = (pathname: string) => PUBLIC_PATHS.includes(pathname);
 const isPrivate = (pathname: string) => PRIVATE_PATHS.includes(pathname);
+const isAdminOnly = (p: string) =>
+  ADMIN_ONLY_PATHS.some((base) => p === base || p.startsWith(base + "/"));
 
-export function middleware(req: NextRequest) {
+async function fetchUserRole(token: string): Promise<string | undefined> {
+  const user = await getUserEdge(token);
+  return user.role;
+}
+
+export async function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const { pathname } = url;
-  const authed = Boolean(req.cookies.get(AUTH_COOKIE)?.value);
+
+  const token = req.cookies.get(AUTH_COOKIE)?.value;
+  const authed = Boolean(token);
 
   // root → redirect ไปตามสถานะ
   if (pathname === "/") {
@@ -20,21 +35,30 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // case: user ล็อกอินแล้ว แต่ดันเข้า public → ส่งไป main
+  // ล็อกอินแล้วแต่เข้าหน้า public → ส่งไป /main
   if (authed && isPublic(pathname)) {
     url.pathname = "/main";
     return NextResponse.redirect(url);
   }
 
-  // case: user ยังไม่ล็อกอิน แต่เข้า private → ส่งไป signin
-  if (!authed && isPrivate(pathname)) {
+  // ยังไม่ล็อกอินแต่เข้าหน้า private/admin → ส่งไป /signin
+  if (!authed && (isPrivate(pathname) || isAdminOnly(pathname))) {
     url.pathname = "/signin";
     return NextResponse.redirect(url);
+  }
+
+  // ตรวจสอบ role เฉพาะหน้า admin
+  if (isAdminOnly(pathname)) {
+    const role = token ? await fetchUserRole(token) : undefined;
+    if (role !== "admin") {
+      url.pathname = "/main";
+      return NextResponse.redirect(url);
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/", "/signin", "/main", "/profile"],
+  matcher: ["/", "/signin", "/main", "/profile", "/setting/:path*"],
 };
