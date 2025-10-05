@@ -1,11 +1,13 @@
 "use client";
-import React, { useEffect,useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { CourseStatus, StaffStatus } from "@/types/api/status";
 import { Faculty } from "@/types/api/faculty";
 import { OrderMapping } from "@/types/api/order";
+import { updateOrderName } from "@/lib/api/order";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaRegCalendarAlt } from "react-icons/fa"; // react-icons
+import { SquarePen, Trash2 } from "lucide-react";
 
 type Props = {
   isOpen: boolean;
@@ -111,37 +113,98 @@ export default function QueueModal(props: Props) {
   const [newOrderTitle, setNewOrderTitle] = useState("");
   const [orderView, setOrderView] = useState<"all" | "done">("all");
 
+  const [editOrder, setEditOrder] = useState<{
+    open: boolean;
+    om: OrderMapping | null;
+  }>({
+    open: false,
+    om: null,
+  });
+  const [editTitle, setEditTitle] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
   // === Confirm delete (Popup) ===
-const [confirm, setConfirm] = useState<{ open: boolean; om: OrderMapping | null }>({
-  open: false,
-  om: null,
-});
-const [deletingId, setDeletingId] = useState<number | string | null>(null);
+  const [confirm, setConfirm] = useState<{
+    open: boolean;
+    om: OrderMapping | null;
+  }>({
+    open: false,
+    om: null,
+  });
+  const [deletingId, setDeletingId] = useState<number | string | null>(null);
 
-async function confirmDeleteNow() {
-  const om = confirm.om;
-  if (!om?.order?.id) return;
-  try {
-    setDeletingId(om.id);
-    const res = await fetch(`http://localhost:8080/api/order/${om.order.id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error("Delete order failed");
-
-    setOrderMappings(prev => {
-      const next = prev.filter(o => o.id !== om.id);
-      if (currentId && onOrdersChanged) onOrdersChanged(currentId, summarize(next));
-      return next;
-    });
-    setConfirm({ open: false, om: null });
-  } catch (err) {
-    console.error(err);
-    alert("ลบ Order ไม่สำเร็จ");
-  } finally {
-    setDeletingId(null);
+  function openEditModal(om: OrderMapping) {
+    setEditOrder({ open: true, om });
+    setEditTitle(om.order?.title ?? "");
   }
-}
+
+  function closeEditModal() {
+    setEditOrder({ open: false, om: null });
+    setEditTitle("");
+  }
+
+  async function saveEditedTitle() {
+    if (!editOrder.om?.order?.id) return;
+    const orderId = editOrder.om.order.id;
+    const title = editTitle.trim();
+    if (!title) return;
+
+    try {
+      setSavingEdit(true);
+      await updateOrderName({ order_id: orderId, title }, token);
+
+      // อัปเดตเฉพาะรายการนั้นใน state ทันที
+      setOrderMappings((prev) =>
+        prev.map((o) =>
+          o.order?.id === orderId ? { ...o, order: { ...o.order, title } } : o
+        )
+      );
+
+      // แจ้ง parent ให้สรุป progress ใหม่ถ้าจำเป็น (ไม่กระทบ count แต่เผื่อคุณใช้ที่อื่น)
+      if (currentId && onOrdersChanged) {
+        const s = summarize(
+          (prevSummaryRef.current ? orderMappings : []).map((o) => o) // ปลอดภัยไว้ก่อน
+        );
+        onOrdersChanged(currentId, s);
+      }
+
+      closeEditModal();
+    } catch (err) {
+      console.error(err);
+      alert("อัปเดตชื่อไม่สำเร็จ");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function confirmDeleteNow() {
+    const om = confirm.om;
+    if (!om?.order?.id) return;
+    try {
+      setDeletingId(om.id);
+      const res = await fetch(
+        `http://localhost:8080/api/order/${om.order.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!res.ok) throw new Error("Delete order failed");
+
+      setOrderMappings((prev) => {
+        const next = prev.filter((o) => o.id !== om.id);
+        if (currentId && onOrdersChanged)
+          onOrdersChanged(currentId, summarize(next));
+        return next;
+      });
+      setConfirm({ open: false, om: null });
+    } catch (err) {
+      console.error(err);
+      alert("ลบ Order ไม่สำเร็จ");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   // ---- helper สรุปงาน ----
   function summarize(oms: OrderMapping[]) {
@@ -154,10 +217,16 @@ async function confirmDeleteNow() {
   const totalOrders = orderMappings.length;
   const doneOrders = orderMappings.filter((o) => o.checked).length;
   const pendingOrders = totalOrders - doneOrders;
-  const percent = totalOrders ? Math.round((doneOrders / totalOrders) * 100) : 0;
+  const percent = totalOrders
+    ? Math.round((doneOrders / totalOrders) * 100)
+    : 0;
 
   // ✅ กันลูป: เรียก parent เฉพาะเมื่อ summary เปลี่ยนจริง ๆ
-  const prevSummaryRef = useRef<{ id: number | null; done: number; total: number } | null>(null);
+  const prevSummaryRef = useRef<{
+    id: number | null;
+    done: number;
+    total: number;
+  } | null>(null);
   useEffect(() => {
     if (!currentId || !onOrdersChanged) return;
 
@@ -165,7 +234,10 @@ async function confirmDeleteNow() {
     const next = { id: currentId, done: doneOrders, total: totalOrders };
 
     const changed =
-      !prev || prev.id !== next.id || prev.done !== next.done || prev.total !== next.total;
+      !prev ||
+      prev.id !== next.id ||
+      prev.done !== next.done ||
+      prev.total !== next.total;
 
     if (changed) {
       prevSummaryRef.current = next;
@@ -182,9 +254,6 @@ async function confirmDeleteNow() {
     "rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm border border-gray-200 text-gray-400";
   const textareaBase =
     "rounded-2xl px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none border border-gray-200 text-gray-400 placeholder:text-gray-400";
-
-
-
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm p-4">
@@ -221,10 +290,8 @@ async function confirmDeleteNow() {
               onChange={(e) => setFaculty(e.target.value)}
               required
             >
-
               {/*<option value="">-- Select Faculty --</option>*/}*
               <option value="">-- เลือกคณะ --</option>*
-
               {facultyList.map((fac) => (
                 <option key={fac.id} value={String(fac.id)}>
                   {fac.nameTH} ({fac.code})
@@ -235,7 +302,6 @@ async function confirmDeleteNow() {
 
           {/* Staff ID */}
           <label className="flex flex-col gap-1">
-
             <span className="text-sm font-semibold">
               รหัสประจำตัวเจ้าหน้าที่
             </span>
@@ -332,7 +398,6 @@ async function confirmDeleteNow() {
             inputBase={inputBase}
           />
 
-
           {/* Orders */}
           {orderMappings?.length > 0 && (
             <div className="md:col-span-2">
@@ -351,7 +416,6 @@ async function confirmDeleteNow() {
                         ? "bg-purple-50 border-purple-200"
                         : "bg-white border-gray-200 hover:bg-gray-50"
                     }`}
-
                 >
                   <span className="flex items-center gap-2 text-sm">
                     <img
@@ -393,88 +457,133 @@ async function confirmDeleteNow() {
 
               {/* รายการงาน */}
               <div className="space-y-3">
-               
-             {orderMappings
-          .filter((o) => (orderView === "done" ? o.checked : !o.checked))
-          .map((om) => {
-            const id = `order-${om.id}`;
-            const checked = !!om.checked;
-            return (
-              <div key={id} className="flex items-center justify-between rounded-3xl px-4 py-4 shadow-sm ">
-                <label htmlFor={id} className="flex items-center gap-3 cursor-pointer flex-1">
-                  <span className={`relative inline-flex h-5 w-5 items-center justify-center rounded-full border ${checked ? "border-[#8741D9]" : "border-gray-300"}`}>
-                    <input
-                      id={id}
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                        const isChecked = e.target.checked;
-                        setOrderMappings(prev => {
-                          const next = prev.map(o => o.id === om.id ? { ...o, checked: isChecked } : o);
-                          if (currentId && onOrdersChanged) onOrdersChanged(currentId, summarize(next));
-                          return next;
-                        });
-                        if (currentId && om.order?.id) onToggleOrder(currentId, om.order.id, isChecked);
-                      }}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                    />
-                    {checked && <span className="h-2.5 w-2.5 rounded-full bg-[#8741D9]" />}
-                  </span>
-                  <span className="text-sm text-gray-900">{om.order?.title}</span>
-                </label>
+                {orderMappings
+                  .filter((o) =>
+                    orderView === "done" ? o.checked : !o.checked
+                  )
+                  .map((om) => {
+                    const id = `order-${om.id}`;
+                    const checked = !!om.checked;
+                    return (
+                      <div
+                        key={id}
+                        className="flex items-center justify-between rounded-3xl px-4 py-4 shadow-sm "
+                      >
+                        <label
+                          htmlFor={id}
+                          className="flex items-center gap-3 cursor-pointer flex-1"
+                        >
+                          <span
+                            className={`relative inline-flex h-5 w-5 items-center justify-center rounded-full border ${
+                              checked ? "border-[#8741D9]" : "border-gray-300"
+                            }`}
+                          >
+                            <input
+                              id={id}
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                setOrderMappings((prev) => {
+                                  const next = prev.map((o) =>
+                                    o.id === om.id
+                                      ? { ...o, checked: isChecked }
+                                      : o
+                                  );
+                                  if (currentId && onOrdersChanged)
+                                    onOrdersChanged(currentId, summarize(next));
+                                  return next;
+                                });
+                                if (currentId && om.order?.id)
+                                  onToggleOrder(
+                                    currentId,
+                                    om.order.id,
+                                    isChecked
+                                  );
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
+                            {checked && (
+                              <span className="h-2.5 w-2.5 rounded-full bg-[#8741D9]" />
+                            )}
+                          </span>
+                          <span className="text-sm text-gray-900">
+                            {om.order?.title}
+                          </span>
+                        </label>
 
-                {/* Delete Button - ลบได้ทันที ไม่ต้องติ๊ก */}
-                <button
-                type="button"
-                className="text-red-500 hover:text-red-700 text-sm font-semibold"
-                onClick={() => setConfirm({ open: true, om })}    // <-- เปิดป๊อปอัพแทน
-              >
-                ลบ
-              </button>
-              {confirm.open && (
-              <div className="fixed inset-0 z-[999] flex items-center justify-center">
-                {/* Backdrop */}
-                <div
-                  className="absolute inset-0 bg-black/40"
-                  onClick={() => setConfirm({ open: false, om: null })}
-                />
-                {/* Card */}
-                <div className="relative mx-4 w-full max-w-md rounded-[24px] bg-white p-6 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)]">
-                  <h2 className="mb-2 text-center text-[15px] font-semibold text-[#8741D9]">
-                    ยืนยันการลบเตือนความจำ
-                  </h2>
-                  <p className="mb-6 text-center text-[15px] text-gray-700">
-                    {confirm.om?.order?.title || "Example"}
-                  </p>
+                        {/* Edit & Delete */}
+                        <div className="flex items-center gap-2">
+                          {/* ปุ่มแก้ไข */}
+                          <button
+                            type="button"
+                            title="แก้ไขชื่อ"
+                            onClick={() => openEditModal(om)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-yellow-50 hover:text-yellow-600 transition"
+                          >
+                            <SquarePen className="h-4 w-4" />
+                            <span className="sr-only">แก้ไข</span>
+                          </button>
 
-                  <div className="flex items-center justify-center gap-4">
-                    <button
-                      type="button"
-                      className="rounded-full px-6 py-2 text-sm font-semibold text-white bg-[#8741D9]"
-                      onClick={() => setConfirm({ open: false, om: null })}
-                      disabled={deletingId !== null}
-                    >
-                      ยกเลิก
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-full px-6 py-2 text-sm font-semibold text-[#5C2D91] bg-[#E9D7FE] disabled:opacity-70"
-                      onClick={confirmDeleteNow}
-                      disabled={deletingId !== null}
-                    >
-                      {deletingId !== null ? "กำลังลบ..." : "ยืนยัน"}
-                    </button>
-                  </div>
-                </div>
+                          {/* ปุ่มลบ */}
+                          <button
+                            type="button"
+                            title="ลบเตือนความจำ"
+                            onClick={() => setConfirm({ open: true, om })}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 transition"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">ลบ</span>
+                          </button>
+                        </div>
+
+                        {confirm.open && (
+                          <div className="fixed inset-0 z-[999] flex items-center justify-center">
+                            {/* Backdrop */}
+                            <div
+                              className="absolute inset-0 bg-black/40"
+                              onClick={() =>
+                                setConfirm({ open: false, om: null })
+                              }
+                            />
+                            {/* Card */}
+                            <div className="relative mx-4 w-full max-w-md rounded-[24px] bg-white p-6 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)]">
+                              <h2 className="mb-2 text-center text-[15px] font-semibold text-[#8741D9]">
+                                ยืนยันการลบเตือนความจำ
+                              </h2>
+                              <p className="mb-6 text-center text-[15px] text-gray-700">
+                                {confirm.om?.order?.title || "Example"}
+                              </p>
+
+                              <div className="flex items-center justify-center gap-4">
+                                <button
+                                  type="button"
+                                  className="rounded-full px-6 py-2 text-sm font-semibold text-white bg-[#8741D9]"
+                                  onClick={() =>
+                                    setConfirm({ open: false, om: null })
+                                  }
+                                  disabled={deletingId !== null}
+                                >
+                                  ยกเลิก
+                                </button>
+                                <button
+                                  type="button"
+                                  className="rounded-full px-6 py-2 text-sm font-semibold text-[#5C2D91] bg-[#E9D7FE] disabled:opacity-70"
+                                  onClick={confirmDeleteNow}
+                                  disabled={deletingId !== null}
+                                >
+                                  {deletingId !== null
+                                    ? "กำลังลบ..."
+                                    : "ยืนยัน"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
-            )}
-              </div>
-            );
-          })}
-              </div>
-
-
-
 
               {/* ปุ่มเพิ่มเตือนความจำ */}
               <div className="mt-6">
@@ -486,6 +595,41 @@ async function confirmDeleteNow() {
                   + เตือนความจำใหม่
                 </button>
               </div>
+
+              {editOrder.open && editOrder.om && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-6">
+                    <h2 className="text-lg font-semibold mb-4">
+                      แก้ไขเตือนความจำ
+                    </h2>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="กรอกชื่อเตือนความจำ..."
+                      className="w-full border rounded-lg px-3 py-2 text-sm mb-4"
+                    />
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm font-semibold"
+                        onClick={closeEditModal}
+                        disabled={savingEdit}
+                      >
+                        ยกเลิก
+                      </button>
+                      <button
+                        type="button"
+                        className="px-4 py-2 rounded-lg bg-[#8741D9] text-white hover:bg-[#4a46b3] text-sm font-semibold disabled:opacity-60"
+                        onClick={saveEditedTitle}
+                        disabled={savingEdit || !editTitle.trim()}
+                      >
+                        {savingEdit ? "กำลังบันทึก..." : "บันทึก"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {showAddOrder && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -557,7 +701,10 @@ async function confirmDeleteNow() {
                               if (currentId && onOrdersChanged) {
                                 const s = summarize(next);
                                 onOrdersChanged(currentId, s);
-                                prevSummaryRef.current = { id: currentId, ...s };
+                                prevSummaryRef.current = {
+                                  id: currentId,
+                                  ...s,
+                                };
                               }
                               return next;
                             });
@@ -612,8 +759,6 @@ async function confirmDeleteNow() {
     </div>
   );
 }
-
-
 
 function DateInput({
   label,
