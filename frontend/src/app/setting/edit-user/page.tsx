@@ -4,31 +4,11 @@ import React, { useState, useEffect } from "react";
 import { Check, ChevronDown, ArrowLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
+import { RoleKey, ROLE_ITEMS, ROLE_LABEL, ROLE_HEADING } from "@/lib/role";
+import { updateUserInfo } from "@/lib/api/user";
 
-type RoleKey = "admin" | "staff" | "LE" | "officer";
-
-const ROLE_ITEMS: Record<RoleKey, string[]> = {
-  admin: ["แก้ไขการตั้งค่าเว็บไซต์", "ข้อมูลเชิงลึก", "การจัดการสมาชิกบัญชี"],
-  staff: ["ข้อมูลเชิงลึก"],
-  LE: ["เข้าถึงรายงาน LE", "จัดการกิจกรรม LE"],
-  officer: ["เข้าถึงระบบเจ้าหน้าที่", "ตรวจสอบสถานะผู้ใช้"],
-};
-
-const ROLE_LABEL: Record<RoleKey, string> = {
-  admin: "Admin",
-  staff: "Staff",
-  LE: "LE",
-  officer: "Officer",
-};
-
-const ROLE_HEADING: Record<RoleKey, string> = {
-  admin: "แอดมิน",
-  staff: "สตาฟ",
-  LE: "LE",
-  officer: "เจ้าหน้าที่",
-};
-
-const isValidEmail = (value: string) => /^[^\s@]+@cmu\.ac\.th$/i.test(value.trim());
+const isValidEmail = (value: string) =>
+  /^[^\s@]+@cmu\.ac\.th$/i.test(value.trim());
 
 interface Faculty {
   id: number;
@@ -109,34 +89,28 @@ export default function EditUserPage() {
       return;
     }
 
+    // ต้องมีคณะ เพราะ backend จะ check ว่ามี faculty ชื่อนี้จริง
+    if (facultyId === null) {
+      alert("กรุณาเลือกคณะ");
+      return;
+    }
+
+    const selectedFaculty = facultyList.find((f) => f.id === facultyId);
+    const organization_name_th = selectedFaculty?.nameTH;
+    if (!organization_name_th) {
+      alert("ไม่พบชื่อคณะจากรายการ โปรดเลือกใหม่");
+      return;
+    }
+
     try {
-      // อัพเดท role
-      const resRole = await fetch(`http://localhost:8080/api/user/${value}/${role}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!resRole.ok) throw new Error("อัพเดท role ไม่สำเร็จ");
-
-      // อัพเดท facultyId + organization_name_th ถ้ามี
-      if (facultyId !== null) {
-        const selectedFaculty = facultyList.find((f) => f.id === facultyId);
-        const organization_name_th = selectedFaculty?.nameTH ?? "";
-
-        const resFaculty = await fetch(`http://localhost:8080/api/user/updatef`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            email: value,
-            facultyId,
-            organization_name_th,
-          }),
-        });
-        if (!resFaculty.ok) throw new Error("อัพเดท Faculty ไม่สำเร็จ");
-      }
-
+      await updateUserInfo(
+        value,
+        {
+          role,
+          organization_name_th,
+        },
+        token
+      );
       router.push("/setting");
     } catch (err) {
       console.error(err);
@@ -187,7 +161,9 @@ export default function EditUserPage() {
 
             {/* สิทธิ์ที่ได้รับ */}
             <div className="mb-6">
-              <div className="mb-2 text-sm font-medium text-gray-700">{ROLE_HEADING[role]}</div>
+              <div className="mb-2 text-sm font-medium text-gray-700">
+                {ROLE_HEADING[role]}
+              </div>
               <div className="space-y-3 pl-0 sm:pl-6">
                 {ROLE_ITEMS[role].map((perm) => (
                   <PermissionRow key={perm} text={perm} />
@@ -197,7 +173,9 @@ export default function EditUserPage() {
 
             {/* Faculty */}
             <div className="mb-6">
-              <label className="mb-2 block text-sm font-medium text-gray-700">คณะ</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                คณะ
+              </label>
               <select
                 value={facultyId ?? ""}
                 onChange={(e) => setFacultyId(Number(e.target.value))}
@@ -214,7 +192,9 @@ export default function EditUserPage() {
 
             {/* อีเมล CMU */}
             <div className="mt-2">
-              <div className="mb-2 text-sm font-medium text-gray-700">อีเมล CMU Account</div>
+              <div className="mb-2 text-sm font-medium text-gray-700">
+                อีเมล CMU Account
+              </div>
               <input
                 type="email"
                 value={email}

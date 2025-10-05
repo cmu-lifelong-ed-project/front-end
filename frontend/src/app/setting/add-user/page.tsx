@@ -4,32 +4,10 @@ import React, { useState, useEffect } from "react";
 import { Check, ChevronDown, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
+import { RoleKey, ROLE_ITEMS, ROLE_LABEL, ROLE_HEADING } from "@/lib/role";
 
-type RoleKey = "admin" | "staff" | "LE" | "officer";
-
-// เพิ่ม LE และ officer ใน ROLE_ITEMS, ROLE_LABEL, ROLE_HEADING
-const ROLE_ITEMS: Record<RoleKey, string[]> = {
-  admin: ["แก้ไขการตั้งค่าเว็บไซต์", "ข้อมูลเชิงลึก", "การจัดการสมาชิกบัญชี"],
-  staff: ["ข้อมูลเชิงลึก"],
-  LE: ["เข้าถึงรายงาน LE", "จัดการกิจกรรม LE"],
-  officer: ["เข้าถึงระบบเจ้าหน้าที่", "ตรวจสอบสถานะผู้ใช้"],
-};
-
-const ROLE_LABEL: Record<RoleKey, string> = {
-  admin: "Admin",
-  staff: "Staff",
-  LE: "LE",
-  officer: "Officer",
-};
-
-const ROLE_HEADING: Record<RoleKey, string> = {
-  admin: "แอดมิน",
-  staff: "สตาฟ",
-  LE: "LE",
-  officer: "เจ้าหน้าที่",
-};
-
-const isValidEmail = (value: string) => /^[^\s@]+@cmu\.ac\.th$/i.test(value.trim());
+const isValidEmail = (value: string) =>
+  /^[^\s@]+@cmu\.ac\.th$/i.test(value.trim());
 
 export default function AddUserPage() {
   const [role, setRole] = useState<RoleKey>("admin");
@@ -64,14 +42,17 @@ export default function AddUserPage() {
 
     try {
       // ส่ง POST แบบไม่ encode @
-      const res = await fetch(`http://localhost:8080/api/user/${value}/${role}`, {
-        method: "POST",
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ organization_name_th: organization }),
-      });
+      const res = await fetch(
+        `http://localhost:8080/api/user/${value}/${role}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ organization_name_th: organization }),
+        }
+      );
 
       if (!res.ok) throw new Error("เพิ่มผู้ใช้ไม่สำเร็จ");
 
@@ -104,16 +85,22 @@ export default function AddUserPage() {
           <div className="rounded-3xl border border-gray-100 bg-[#F8F7FF] p-4 sm:p-6">
             {/* ประเภทสิทธิ์ */}
             <div className="mb-6">
-              <label className="mb-2 block text-sm font-medium text-gray-700">ประเภทสิทธิ์</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                ประเภทสิทธิ์
+              </label>
               <div className="relative inline-block w-full sm:w-auto">
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as RoleKey)}
                   className="w-full appearance-none rounded-full border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm font-medium text-gray-700 shadow-sm hover:border-gray-300 focus:border-[#6C63FF] focus:outline-none"
                 >
-                  {(["admin", "staff", "LE", "officer"] as RoleKey[]).map((k) => (
-                    <option key={k} value={k}>{ROLE_LABEL[k]}</option>
-                  ))}
+                  {(["admin", "staff", "LE", "officer"] as RoleKey[]).map(
+                    (k) => (
+                      <option key={k} value={k}>
+                        {ROLE_LABEL[k]}
+                      </option>
+                    )
+                  )}
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               </div>
@@ -121,7 +108,9 @@ export default function AddUserPage() {
 
             {/* สิทธิ์ที่ได้รับ */}
             <div className="mb-8">
-              <div className="mb-2 text-sm font-medium text-gray-700">{ROLE_HEADING[role]}</div>
+              <div className="mb-2 text-sm font-medium text-gray-700">
+                {ROLE_HEADING[role]}
+              </div>
               <div className="space-y-3 pl-0 sm:pl-6">
                 {ROLE_ITEMS[role].map((perm) => (
                   <PermissionRow key={perm} text={perm} />
@@ -131,11 +120,16 @@ export default function AddUserPage() {
 
             {/* อีเมล */}
             <div className="mt-2">
-              <div className="mb-2 text-sm font-medium text-gray-700">อีเมล CMU Account</div>
+              <div className="mb-2 text-sm font-medium text-gray-700">
+                อีเมล CMU Account
+              </div>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); if (error) setError(null); }}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder="example@cmu.ac.th"
                 className="w-full rounded-full border bg-white px-5 py-3 text-sm text-gray-700 placeholder-gray-400 focus:border-[#6C63FF] focus:outline-none border-gray-300"
               />
@@ -143,7 +137,9 @@ export default function AddUserPage() {
 
             {/* คณะ/หน่วยงาน */}
             <div className="mt-4">
-              <div className="mb-2 text-sm font-medium text-gray-700">คณะ / หน่วยงาน</div>
+              <div className="mb-2 text-sm font-medium text-gray-700">
+                คณะ / หน่วยงาน
+              </div>
               <input
                 type="text"
                 value={organization}
