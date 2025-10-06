@@ -19,6 +19,16 @@ interface StatusSummaryProps {
 }
 
 export default function StatusSummary({ courseStatusList, cards }: StatusSummaryProps) {
+  // 🧭 ดึง role จาก localStorage 
+  const [role, setRole] = React.useState<string>("");
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedRole = localStorage.getItem("role");
+      if (savedRole) setRole(savedRole);
+    }
+  }, []);
+
   // 🧮 นับจำนวนคิวตาม course_status_id
   const statusCounts = React.useMemo(() => {
     const counts: Record<number, number> = {};
@@ -31,9 +41,12 @@ export default function StatusSummary({ courseStatusList, cards }: StatusSummary
 
   return (
     <div className="bg-white rounded-3xl shadow-[0_20px_60px_-20px_rgba(24,16,63,0.1)] border border-purple-100 p-6 mb-6">
-      <h3 className="text-lg sm:text-xl font-semibold text-[#8741D9] mb-4">
-        สรุปจำนวนคิวตามสถานะ
-      </h3>
+      {/* ✅ แสดงหัวข้อเฉพาะเมื่อ role === "admin" */}
+      {role === "admin" && (
+        <h3 className="text-lg sm:text-xl font-semibold text-[#8741D9] mb-4">
+          สรุปจำนวนคิวตามสถานะ
+        </h3>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {courseStatusList.map((cs) => (
