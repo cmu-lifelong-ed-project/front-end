@@ -19,6 +19,9 @@ import { Plus, UserRoundPen } from "lucide-react";
 import SortableCard from "@/components/SortableCard";
 import QueueModal from "../../components/QueueModal";
 import SuccessOverlay from "@/components/ui/SuccessOverlay";
+import StatusSummary from "@/components/StatusSummary";
+
+
 import {
   ListQueue,
   CreateListQueueInput,
@@ -367,6 +370,9 @@ export default function QueuePage() {
           />
         </div>
 
+ coursestatussummary
+        <StatusSummary courseStatusList={courseStatusList} cards={cards} />
+
         <StaffStatusManager
           isOpen={showStaffStatus}
           onClose={() => setShowStaffStatus(false)}
@@ -381,6 +387,7 @@ export default function QueuePage() {
             }
           }}
         />
+ main
 
         <QueueModal
           isOpen={showModal}

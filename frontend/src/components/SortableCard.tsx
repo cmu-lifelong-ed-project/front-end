@@ -174,7 +174,11 @@ export default function SortableCard({
               value={item.staff_status?.status ?? "-"}
               labelPad="ml-3"
             />
+ coursestatussummary
+        
+
          
+ main
           </div>
 
           <div className="md:col-span-4 w-full">

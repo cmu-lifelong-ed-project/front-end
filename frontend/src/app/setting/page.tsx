@@ -26,6 +26,11 @@ export default function SettingUsersPreview() {
   );
   const router = useRouter();
 
+  // 🔹 state สำหรับโมดอลยืนยันลบ (เพิ่มเท่านี้)
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   // อ่าน token, role จาก cookie
   useEffect(() => {
     const t = getCookie("backend-api-token");
@@ -47,16 +52,12 @@ export default function SettingUsersPreview() {
         if (!res.ok) throw new Error("โหลดข้อมูลผู้ใช้ไม่สำเร็จ");
 
         const data: User[] = await res.json();
-        console.log("Raw users from API:", data);
-
         // เรียงตาม createdAt ใหม่ล่าสุดก่อน
         const sorted = [...data].sort((a, b) => {
           const ta = a.createdAt ? Date.parse(a.createdAt) : 0;
           const tb = b.createdAt ? Date.parse(b.createdAt) : 0;
           return tb - ta;
         });
-
-        console.log("Sorted users by createdAt:", sorted);
         setUsers(sorted);
       } catch (err) {
         console.error("Error fetching users:", err);
@@ -90,26 +91,41 @@ export default function SettingUsersPreview() {
     router.push(`/setting/edit-user?email=${encodeURIComponent(cmuitaccount)}`);
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  // 🔹 แก้ handleDelete ให้ “เปิดโมดอล” (แทน confirm())
+  const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`ยืนยันการลบผู้ใช้นี้?`)) return;
+    const r = rows.find((x) => x.id === id);
+    const name =
+      r?.displayName ||
+      users.find((u) => u.id === id)?.cmuitaccount?.split("@")[0] ||
+      "ผู้ใช้";
+    const email = r?.cmuitaccount || users.find((u) => u.id === id)?.cmuitaccount || "";
+    setPendingDelete({ id, name, email });
+    setConfirmOpen(true);
+  };
+
+  // 🔹 ลบจริงเมื่อกดยืนยันในโมดอล
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
     if (!token) {
       alert("ไม่พบ token");
       return;
     }
-
     try {
-      const res = await fetch(`http://localhost:8080/api/user/${id}`, {
+      setDeleting(true);
+      const res = await fetch(`http://localhost:8080/api/user/${pendingDelete.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("ลบไม่สำเร็จ");
-
-      // อัปเดต state หลังลบสำเร็จ
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+      setUsers((prev) => prev.filter((u) => u.id !== pendingDelete.id));
+      setConfirmOpen(false);
+      setPendingDelete(null);
     } catch (err) {
-      alert("เกิดข้อผิดพลาดในการลบ");
       console.error(err);
+      alert("เกิดข้อผิดพลาดในการลบ");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -212,6 +228,38 @@ export default function SettingUsersPreview() {
           </div>
         </div>
       </main>
+
+      {/* 🔹 โมดอลยืนยันลบ (หน้าตาแบบรูป) */}
+      {confirmOpen && pendingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
+          {/* overlay */}
+          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmOpen(false)} />
+          {/* card */}
+          <div className="relative z-10 w-[92%] max-w-md rounded-3xl bg-[#FFFFFF] p-6 shadow-[0_20px_60px_-20px_rgba(24,16,63,0.2)]">
+            <h3 className="text-center text-base font-semibold text-[#6F42C1]">ยืนยันการลบผู้ใช้</h3>
+            <div className="mt-4 text-center text-sm text-gray-600">
+              คุณกำลังจะลบผู้ใช้ <span className="text-gray-700">“ {pendingDelete.name} ”</span>
+              <div className="mt-2 text-gray-400">{pendingDelete.email}</div>
+            </div>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="min-w-[120px] rounded-full bg-[#6F42C1] px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                disabled={deleting}
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="min-w-[120px] rounded-full bg-[#EDE4FF] px-6 py-2.5 text-sm font-semibold text-[#6F42C1] hover:bg-[#E3D7FF] disabled:opacity-60"
+                disabled={deleting}
+              >
+                {deleting ? "กำลังลบ..." : "ยืนยัน"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
