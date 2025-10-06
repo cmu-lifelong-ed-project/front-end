@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { JWTPayload } from "@/types/auth/JWTpayload";
 type SuccessResponse = {
   ok: true;
@@ -14,9 +14,7 @@ type ErrorResponse = {
 
 export type WhoAmIResponse = SuccessResponse | ErrorResponse;
 
-export async function GET(
-  req: NextRequest
-): Promise<NextResponse<WhoAmIResponse>> {
+export async function GET(): Promise<NextResponse<WhoAmIResponse>> {
   //This token means apptoke
   const cookieStore = await cookies();
   const token = cookieStore.get("cmu-entraid-example-token")?.value;
@@ -54,7 +52,7 @@ export async function GET(
         },
       ],
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { ok: false, message: "Invalid token" },
       { status: 401 }

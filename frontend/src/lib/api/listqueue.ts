@@ -3,7 +3,6 @@ import {
   ListQueue,
   CreateListQueueInput,
   UpdateListQueueInput,
-  UpdateListQueuePriorityInput,
 } from "@/types/api/queue";
 
 //// ============================================================
@@ -23,7 +22,7 @@ export async function createListQueue(
   return res.data;
 }
 
-/** POST /listqueue
+/** PUT /listqueue
  *  อัปเดตข้อมูลคิว
  */
 export async function updateListQueue(
@@ -34,14 +33,17 @@ export async function updateListQueue(
   return res.data;
 }
 
-/** POST /listqueue
+/** PUT /listqueue/:id/priority/:priority
  *  อัปเดตลำดับ priority ของคิว
  */
 export async function updateListQueuePriority(
-  body: UpdateListQueuePriorityInput,
+  params: { id: number; priority: number },
   token?: string
 ): Promise<ListQueue> {
-  const res = await api.put("/listqueue", body, { headers: authHeader(token) });
+  const { id, priority } = params;
+  const res = await api.put(`/listqueue/${id}/priority/${priority}`, null, {
+    headers: authHeader(token),
+  });
   return res.data;
 }
 

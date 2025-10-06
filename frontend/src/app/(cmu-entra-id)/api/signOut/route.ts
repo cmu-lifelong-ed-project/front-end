@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 type SuccessResponse = {
   ok: true;
@@ -10,9 +10,7 @@ type ErrorResponse = {
 };
 
 export type signoutResponse = SuccessResponse | ErrorResponse;
-export async function POST(
-  req: NextRequest
-): Promise<NextResponse<signoutResponse>> {
+export async function POST(): Promise<NextResponse<signoutResponse>> {
   // function delete cookie apptoken
   (await cookies()).delete("cmu-entraid-example-token");
   (await cookies()).delete("backend-api-token");

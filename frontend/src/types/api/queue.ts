@@ -49,8 +49,3 @@ export type CreateListQueueInput = {
 export type UpdateListQueueInput = CreateListQueueInput & {
   id: number;
 };
-
-export type UpdateListQueuePriorityInput = {
-  id: number;
-  priority: number;
-};

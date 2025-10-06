@@ -21,7 +21,6 @@ import QueueModal from "../../components/QueueModal";
 import SuccessOverlay from "@/components/ui/SuccessOverlay";
 import StatusSummary from "@/components/StatusSummary";
 
-
 import {
   ListQueue,
   CreateListQueueInput,
@@ -277,23 +276,35 @@ export default function QueuePage() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
+    // ตำแหน่งเดิม/ใหม่
     const oldIndex = cards.findIndex((i) => i.id === active.id);
     const newIndex = cards.findIndex((i) => i.id === over.id);
+
+    // สร้างลำดับใหม่บน client
     const newCards = arrayMove(cards, oldIndex, newIndex).map((card, idx) => ({
       ...card,
-      priority: idx + 1,
+      priority: idx + 1, // ปกติ priority 1..N สำหรับรายการที่ยังไม่ Done/Cancel
     }));
 
+    // อัปเดต UI
     setCards(newCards);
 
-    for (const card of newCards) {
-      updateListQueuePriority(
-        { id: card.id, priority: card.priority },
-        token
-      ).catch((err) =>
-        console.error(`Failed to update priority ${card.id}`, err)
+    // ยิงเฉพาะรายการที่ priority เปลี่ยนจริง ๆ
+    const updates = newCards
+      .filter(
+        (c, idx) =>
+          c.priority !== (cards.find((x) => x.id === c.id)?.priority ?? idx + 1)
+      )
+      .map((c) =>
+        updateListQueuePriority(
+          { id: c.id, priority: c.priority },
+          token
+        ).catch((err) => {
+          console.error(`Failed to update priority ${c.id}`, err);
+        })
       );
-    }
+
+    await Promise.all(updates);
   }
 
   async function handleToggleOrder(
@@ -370,7 +381,6 @@ export default function QueuePage() {
           />
         </div>
 
-
         <StatusSummary courseStatusList={courseStatusList} cards={cards} />
 
         <StaffStatusManager
@@ -387,7 +397,6 @@ export default function QueuePage() {
             }
           }}
         />
-
 
         <QueueModal
           isOpen={showModal}

@@ -5,7 +5,7 @@ import { getUserEdge } from "@/lib/api/user";
 const AUTH_COOKIE = "backend-api-token";
 
 const PUBLIC_PATHS = ["/signin"];
-const PRIVATE_PATHS = ["/main", "/profile"];
+const PRIVATE_PATHS = ["/main"];
 const ADMIN_ONLY_PATHS = [
   "/setting",
   "/setting/add-user",
@@ -60,5 +60,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/signin", "/main", "/profile", "/setting/:path*"],
+  matcher: ["/", "/signin", "/main", "/setting/:path*"],
 };

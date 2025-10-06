@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { isAxiosError } from "axios";
 import { X, Plus, SquarePen, Trash2 } from "lucide-react";
 import {
   getStaffStatuses,
@@ -116,8 +117,14 @@ export default function StaffStatusManager({
       const next = items.filter((s) => s.id !== id);
       pushChange(next);
       setConfirmDeleteId(null);
-    } catch (e: any) {
-      alert(e?.response?.data?.error || "ลบไม่สำเร็จ");
+    } catch (e: unknown) {
+      const message = isAxiosError(e)
+        ? (e.response?.data as { error?: string } | undefined)?.error ??
+          e.message
+        : e instanceof Error
+        ? e.message
+        : "ลบไม่สำเร็จ";
+      alert(message);
       console.error(e);
     } finally {
       setDeleting(false);
