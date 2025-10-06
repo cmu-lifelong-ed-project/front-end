@@ -370,7 +370,7 @@ export default function QueuePage() {
           />
         </div>
 
- coursestatussummary
+
         <StatusSummary courseStatusList={courseStatusList} cards={cards} />
 
         <StaffStatusManager
@@ -387,7 +387,7 @@ export default function QueuePage() {
             }
           }}
         />
- main
+
 
         <QueueModal
           isOpen={showModal}
