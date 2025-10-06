@@ -30,19 +30,21 @@ export default function StatusSummary({ courseStatusList, cards }: StatusSummary
   }, [cards]);
 
   return (
-    <div className="bg-white rounded-xl shadow p-4 mb-6">
-      <h3 className="text-lg font-semibold text-[#8741D9] mb-2">
+    <div className="bg-white rounded-3xl shadow-[0_20px_60px_-20px_rgba(24,16,63,0.1)] border border-purple-100 p-6 mb-6">
+      <h3 className="text-lg sm:text-xl font-semibold text-[#8741D9] mb-4">
         สรุปจำนวนคิวตามสถานะ
       </h3>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {courseStatusList.map((cs) => (
           <div
             key={cs.id}
-            className="border rounded-lg p-3 flex flex-col items-center justify-center bg-[#F9F5FF]"
+            className="rounded-2xl bg-white p-3 text-center border border-gray-100 shadow-md hover:shadow-lg transition-shadow"
           >
-            <span className="text-sm text-gray-600">{cs.status}</span>
-            <span className="text-xl font-bold text-[#8741D9]">
+            <span className="text-sm font-regular text-[#858585] mb-3 block">
+              {cs.status}
+            </span>
+            <span className="text-3xl font-semibold text-[#8741D9] leading-none">
               {statusCounts[cs.id] || 0}
             </span>
           </div>
