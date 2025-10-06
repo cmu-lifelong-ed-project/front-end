@@ -8,6 +8,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaRegCalendarAlt } from "react-icons/fa"; // react-icons
 import { SquarePen, Trash2 } from "lucide-react";
+import StaffStatusManager from "./StaffStatusManager";
+
 
 type Props = {
   isOpen: boolean;
@@ -315,23 +317,37 @@ export default function QueueModal(props: Props) {
             />
           </label>
 
-          {/* Staff Status */}
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">สถานะเจ้าหน้าที่</span>
-            <select
-              className={selectBase}
-              value={staffStatusId}
-              onChange={(e) => setStaffStatusId(e.target.value)}
-              required
-            >
-              <option value="">-- Select Status --</option>
-              {staffStatusList.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.status}
-                </option>
-              ))}
-            </select>
-          </label>
+         {/* Staff Status */}
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold">สถานะเจ้าหน้าที่</span>
+                    <select
+                      className={selectBase}
+                      value={staffStatusId}
+                      onChange={(e) => setStaffStatusId(e.target.value)}
+                      required
+                    >
+                      <option value="">-- Select Status --</option>
+                      {staffStatusList.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.status}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* ✅ เพิ่มตรงนี้ */}
+                    <StaffStatusManager
+                      list={staffStatusList}
+                      token={token}
+                      onUpdated={(updated) => {
+                        // อัปเดต list ทันทีใน parent
+                        const unique = Array.from(new Map(updated.map((i) => [i.id, i])).values());
+                        props.staffStatusList.splice(0, props.staffStatusList.length, ...unique);
+                      }}
+                    />
+                  </label>
+
+
+          
 
           {/* Course Status */}
           <label className="flex flex-col gap-1">
