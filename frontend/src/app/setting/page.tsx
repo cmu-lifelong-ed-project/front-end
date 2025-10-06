@@ -4,8 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
-
-type RoleKey = "admin" | "staff" | "LE" | "officer";
+import { RoleKey, ROLE_BADGE } from "@/lib/role";
 
 type User = {
   id: string;
@@ -17,21 +16,14 @@ type User = {
   createdAt?: string;
 };
 
-// เพิ่ม role LE และ officer
-const ROLE_BADGE: Record<string, string> = {
-  admin: "แอดมิน",
-  staff: "เจ้าหน้าที่",
-  super_admin: "ซูเปอร์แอดมิน",
-  LE: "LE",
-  officer: "เจ้าหน้าที่ LE",
-};
-
 const norm = (s: string) => s.trim().toLowerCase();
 
 export default function SettingUsersPreview() {
   const [users, setUsers] = useState<User[]>([]);
   const [token, setToken] = useState<string | undefined>(undefined);
-  const [currentRole, setCurrentRole] = useState<RoleKey | undefined>(undefined);
+  const [currentRole, setCurrentRole] = useState<RoleKey | undefined>(
+    undefined
+  );
   const router = useRouter();
 
   // 🔹 state สำหรับโมดอลยืนยันลบ (เพิ่มเท่านี้)
@@ -143,7 +135,9 @@ export default function SettingUsersPreview() {
         <div className="rounded-3xl bg-white p-4 shadow sm:p-8">
           {/* Header */}
           <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-base font-semibold text-gray-700 sm:text-lg">การจัดการผู้ใช้</h1>
+            <h1 className="text-base font-semibold text-gray-700 sm:text-lg">
+              การจัดการผู้ใช้
+            </h1>
             {currentRole && (
               <span className="inline-flex w-full items-center justify-center rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 sm:w-auto">
                 สิทธิ์ของฉัน: {ROLE_BADGE[currentRole]}
@@ -168,16 +162,28 @@ export default function SettingUsersPreview() {
                     className="grid grid-cols-1 items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm sm:grid-cols-12 sm:gap-0 sm:px-4 sm:py-3"
                   >
                     <div className="min-w-0 sm:col-span-3">
-                      <div className="text-[11px] text-gray-400 sm:hidden">ชื่อ</div>
-                      <div className="truncate text-sm font-medium text-gray-700">{u.displayName}</div>
+                      <div className="text-[11px] text-gray-400 sm:hidden">
+                        ชื่อ
+                      </div>
+                      <div className="truncate text-sm font-medium text-gray-700">
+                        {u.displayName}
+                      </div>
                     </div>
                     <div className="min-w-0 sm:col-span-3">
-                      <div className="mt-1 text-[11px] text-gray-400 sm:hidden">อีเมล (CMU)</div>
-                      <div className="truncate text-sm text-gray-500">{u.cmuitaccount}</div>
+                      <div className="mt-1 text-[11px] text-gray-400 sm:hidden">
+                        อีเมล (CMU)
+                      </div>
+                      <div className="truncate text-sm text-gray-500">
+                        {u.cmuitaccount}
+                      </div>
                     </div>
                     <div className="min-w-0 sm:col-span-3">
-                      <div className="mt-1 text-[11px] text-gray-400 sm:hidden">คณะ / หน่วยงาน</div>
-                      <div className="truncate text-sm text-gray-500">{u.organization_name_th || "-"}</div>
+                      <div className="mt-1 text-[11px] text-gray-400 sm:hidden">
+                        คณะ / หน่วยงาน
+                      </div>
+                      <div className="truncate text-sm text-gray-500">
+                        {u.organization_name_th || "-"}
+                      </div>
                     </div>
                     <div className="sm:col-span-3 sm:flex sm:items-center sm:justify-end sm:gap-2">
                       <div className="mt-1 flex items-center justify-between sm:mt-0 sm:block">
@@ -205,7 +211,9 @@ export default function SettingUsersPreview() {
                   </div>
                 ))
               ) : (
-                <div className="py-6 text-center text-sm text-gray-500">ยังไม่มีผู้ใช้</div>
+                <div className="py-6 text-center text-sm text-gray-500">
+                  ยังไม่มีผู้ใช้
+                </div>
               )}
 
               <button

@@ -10,3 +10,8 @@ export type UpdateOrderInput = {
   list_queue_id: number;
   checked: boolean;
 };
+
+export type UpdateOrderNameInput = {
+  order_id: number;
+  title: string;
+};

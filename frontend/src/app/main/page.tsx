@@ -14,7 +14,7 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import { Plus } from "lucide-react";
+import { Plus, UserRoundPen } from "lucide-react";
 
 import SortableCard from "@/components/SortableCard";
 import QueueModal from "../../components/QueueModal";
@@ -30,7 +30,7 @@ import {
 import { Faculty } from "@/types/api/faculty";
 import { OrderMapping } from "@/types/api/order";
 import { CourseStatus, StaffStatus } from "@/types/api/status";
-import { toDatetimeLocal } from "@/lib/ui";
+import { toDatetimeLocal } from "@/lib/datetime";
 import { getCookie } from "@/lib/cookie";
 import {
   getUnfinishedListQueues,
@@ -46,6 +46,7 @@ import { getFaculties } from "@/lib/api/faculty";
 import { getCourseStatuses } from "@/lib/api/courseStatus";
 import { getUser } from "@/lib/api/user";
 import { updateOrder } from "@/lib/api/order";
+import StaffStatusManager from "@/components/StaffStatusManager";
 import FilterSearchBar from "@/components/FilterSearchBar";
 
 const notoSansThai = Noto_Sans_Thai({
@@ -75,6 +76,7 @@ export default function QueuePage() {
   const [editMode, setEditMode] = useState(false);
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [token, setToken] = useState("");
+  const [showStaffStatus, setShowStaffStatus] = useState(false);
 
   const [staffStatusList, setStaffStatusList] = useState<StaffStatus[]>([]);
   const [facultyList, setFacultyList] = useState<Faculty[]>([]);
@@ -324,11 +326,6 @@ export default function QueuePage() {
     setCards(listqueue);
   }
 
-
-
-
-
-
   return (
     <div className={`${notoSansThai.className} bg-[#F8F4FF] min-h-screen`}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
@@ -338,6 +335,20 @@ export default function QueuePage() {
           </h2>
           {(userRole === "admin" || userRole === "staff") && (
             <div className="flex items-center gap-3">
+              {userRole === "admin" && (
+                <button
+                  onClick={() => setShowStaffStatus(true)}
+                  className="self-start sm:self-auto inline-flex items-center gap-1 
+                  bg-white border border-gray-200 text-gray-700
+                  px-5 sm:px-4 py-2.5 sm:py-2 rounded-full 
+                  shadow-sm hover:bg-purple-50 hover:border-purple-200 
+                  hover:text-[#8741D9] transition-all duration-150"
+                >
+                  <UserRoundPen size={16} />
+                  สถานะเจ้าหน้าที่
+                </button>
+              )}
+
               <button
                 className="self-start sm:self-auto bg-[#34C759] text-white px-5 sm:px-3 py-2.5 sm:py-2 rounded-full shadow-md hover:bg-[#28A745] focus:outline-none flex flex-row items-center gap-x-1"
                 onClick={() => {
@@ -359,7 +370,24 @@ export default function QueuePage() {
           />
         </div>
 
+ coursestatussummary
         <StatusSummary courseStatusList={courseStatusList} cards={cards} />
+
+        <StaffStatusManager
+          isOpen={showStaffStatus}
+          onClose={() => setShowStaffStatus(false)}
+          token={token}
+          canManage={userRole === "admin"}
+          onChanged={async () => {
+            try {
+              const staffS = await getStaffStatuses(token);
+              setStaffStatusList(staffS);
+            } catch (e) {
+              console.error(e);
+            }
+          }}
+        />
+ main
 
         <QueueModal
           isOpen={showModal}
