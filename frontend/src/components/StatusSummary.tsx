@@ -16,20 +16,15 @@ type Card = {
 interface StatusSummaryProps {
   courseStatusList: CourseStatus[];
   cards: Card[];
+  role?: string; // ✅ เพิ่ม prop นี้ (optional)
 }
 
-export default function StatusSummary({ courseStatusList, cards }: StatusSummaryProps) {
-  // 🧭 ดึง role จาก localStorage 
-  const [role, setRole] = React.useState<string>("");
-
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedRole = localStorage.getItem("role");
-      if (savedRole) setRole(savedRole);
-    }
-  }, []);
-
-  // 🧮 นับจำนวนคิวตาม course_status_id
+export default function StatusSummary({
+  courseStatusList,
+  cards,
+  role = "", // ✅ ตั้งค่าเริ่มต้นกัน undefined
+}: StatusSummaryProps) {
+  // 🧮 นับจำนวนคิวตาม course_status_id (เหมือนเดิม)
   const statusCounts = React.useMemo(() => {
     const counts: Record<number, number> = {};
     for (const c of cards) {
