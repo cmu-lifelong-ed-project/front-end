@@ -16,8 +16,6 @@ type User = {
   createdAt?: string;
 };
 
-const norm = (s: string) => s.trim().toLowerCase();
-
 export default function SettingUsersPreview() {
   const [users, setUsers] = useState<User[]>([]);
   const [token, setToken] = useState<string | undefined>(undefined);
@@ -28,7 +26,11 @@ export default function SettingUsersPreview() {
 
   // 🔹 state สำหรับโมดอลยืนยันลบ (เพิ่มเท่านี้)
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    name: string;
+    email: string;
+  } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // อ่าน token, role จาก cookie
@@ -84,7 +86,7 @@ export default function SettingUsersPreview() {
     });
   }, [users]);
 
-  const handleAddUser = () => router.push("/setting/edit-user");
+  const handleAddUser = () => router.push("/setting/add-user");
 
   const handleArrowClick = (cmuitaccount: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -99,7 +101,8 @@ export default function SettingUsersPreview() {
       r?.displayName ||
       users.find((u) => u.id === id)?.cmuitaccount?.split("@")[0] ||
       "ผู้ใช้";
-    const email = r?.cmuitaccount || users.find((u) => u.id === id)?.cmuitaccount || "";
+    const email =
+      r?.cmuitaccount || users.find((u) => u.id === id)?.cmuitaccount || "";
     setPendingDelete({ id, name, email });
     setConfirmOpen(true);
   };
@@ -113,10 +116,13 @@ export default function SettingUsersPreview() {
     }
     try {
       setDeleting(true);
-      const res = await fetch(`http://localhost:8080/api/user/${pendingDelete.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `http://localhost:8080/api/user/${pendingDelete.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (!res.ok) throw new Error("ลบไม่สำเร็จ");
       setUsers((prev) => prev.filter((u) => u.id !== pendingDelete.id));
       setConfirmOpen(false);
@@ -231,14 +237,24 @@ export default function SettingUsersPreview() {
 
       {/* 🔹 โมดอลยืนยันลบ (หน้าตาแบบรูป) */}
       {confirmOpen && pendingDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+        >
           {/* overlay */}
-          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setConfirmOpen(false)}
+          />
           {/* card */}
           <div className="relative z-10 w-[92%] max-w-md rounded-3xl bg-[#FFFFFF] p-6 shadow-[0_20px_60px_-20px_rgba(24,16,63,0.2)]">
-            <h3 className="text-center text-base font-semibold text-[#6F42C1]">ยืนยันการลบผู้ใช้</h3>
+            <h3 className="text-center text-base font-semibold text-[#6F42C1]">
+              ยืนยันการลบผู้ใช้
+            </h3>
             <div className="mt-4 text-center text-sm text-gray-600">
-              คุณกำลังจะลบผู้ใช้ <span className="text-gray-700">“ {pendingDelete.name} ”</span>
+              คุณกำลังจะลบผู้ใช้{" "}
+              <span className="text-gray-700">“ {pendingDelete.name} ”</span>
               <div className="mt-2 text-gray-400">{pendingDelete.email}</div>
             </div>
             <div className="mt-6 flex items-center justify-center gap-3">

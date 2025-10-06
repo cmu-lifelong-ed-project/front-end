@@ -94,13 +94,11 @@ export default function AddUserPage() {
                   onChange={(e) => setRole(e.target.value as RoleKey)}
                   className="w-full appearance-none rounded-full border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm font-medium text-gray-700 shadow-sm hover:border-gray-300 focus:border-[#6C63FF] focus:outline-none"
                 >
-                  {(["admin", "staff", "LE", "officer"] as RoleKey[]).map(
-                    (k) => (
-                      <option key={k} value={k}>
-                        {ROLE_LABEL[k]}
-                      </option>
-                    )
-                  )}
+                  {(Object.keys(ROLE_LABEL) as RoleKey[]).map((k) => (
+                    <option key={k} value={k}>
+                      {ROLE_LABEL[k]}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               </div>
