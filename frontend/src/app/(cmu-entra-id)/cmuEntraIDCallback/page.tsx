@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { SignInResponse } from "../api/signIn/route";
 import Loader from "@/components/Loader";
 
-export default function cmuEntraIDCallback() {
+export default function CmuEntraIDCallback() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
