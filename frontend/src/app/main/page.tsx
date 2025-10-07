@@ -15,12 +15,12 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { Plus, UserRoundPen } from "lucide-react";
-
-import SortableCard from "@/components/SortableCard";
-import QueueModal from "../../components/QueueModal";
+import SortableCard from "@/components/main/SortableCard";
+import QueueModal from "../../components/main/QueueModal";
+import StatusSummary from "@/components/main/StatusSummary";
+import StaffStatusManager from "@/components/main/StaffStatusManager";
+import FilterSearchBar from "@/components/main/FilterSearchBar";
 import SuccessOverlay from "@/components/ui/SuccessOverlay";
-import StatusSummary from "@/components/StatusSummary";
-
 import {
   ListQueue,
   CreateListQueueInput,
@@ -45,8 +45,6 @@ import { getFaculties } from "@/lib/api/faculty";
 import { getCourseStatuses } from "@/lib/api/courseStatus";
 import { getUser } from "@/lib/api/user";
 import { updateOrder } from "@/lib/api/order";
-import StaffStatusManager from "@/components/StaffStatusManager";
-import FilterSearchBar from "@/components/FilterSearchBar";
 
 const notoSansThai = Noto_Sans_Thai({
   weight: ["300", "400", "500", "600", "700"],

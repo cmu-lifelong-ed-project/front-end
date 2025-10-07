@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { CourseStatus, StaffStatus } from "@/types/api/status";
 import { Faculty } from "@/types/api/faculty";
 import { OrderMapping } from "@/types/api/order";
@@ -92,8 +93,6 @@ export default function QueueModal(props: Props) {
     setOnWeb,
     appointmentDateAw,
     setAppointmentDateAw,
-    dateLeft,
-    setDateLeft,
     note,
     setNote,
     facultyList,
@@ -216,10 +215,6 @@ export default function QueueModal(props: Props) {
   // ---- summary ใช้ซ้ำ ----
   const totalOrders = orderMappings.length;
   const doneOrders = orderMappings.filter((o) => o.checked).length;
-  const pendingOrders = totalOrders - doneOrders;
-  const percent = totalOrders
-    ? Math.round((doneOrders / totalOrders) * 100)
-    : 0;
 
   // ✅ กันลูป: เรียก parent เฉพาะเมื่อ summary เปลี่ยนจริง ๆ
   const prevSummaryRef = useRef<{
@@ -418,10 +413,11 @@ export default function QueueModal(props: Props) {
                     }`}
                 >
                   <span className="flex items-center gap-2 text-sm">
-                    <img
+                    <Image
                       src="/queuecard/list.png"
                       alt="list icon"
-                      className="h-5 w-5"
+                      width={20}
+                      height={20}
                     />
                     ทั้งหมด
                   </span>
@@ -442,10 +438,11 @@ export default function QueueModal(props: Props) {
                     }`}
                 >
                   <span className="flex items-center gap-2 text-sm">
-                    <img
+                    <Image
                       src="/queuecard/checked.png"
                       alt="checked icon"
-                      className="h-5 w-5"
+                      width={20}
+                      height={20}
                     />
                     เสร็จแล้ว
                   </span>
@@ -767,7 +764,12 @@ function DateInput({
 }) {
   const date = value ? new Date(value) : null;
 
-  const CustomInput = React.forwardRef<HTMLInputElement, any>(
+  type CustomInputProps = {
+    value?: string;
+    onClick?: () => void;
+  };
+
+  const CustomInput = React.forwardRef<HTMLInputElement, CustomInputProps>(
     ({ value, onClick }, ref) => (
       <div className="relative w-full">
         <input
@@ -778,23 +780,25 @@ function DateInput({
           className={`${inputBase} w-full pr-10 border rounded-3xl py-2 px-3`}
         />
         <FaRegCalendarAlt
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"
           onClick={onClick}
         />
       </div>
     )
   );
 
+  CustomInput.displayName = "DatePickerCustomInput";
+
   return (
     <label className="flex flex-col gap-1 w-full">
       <span className="text-sm font-semibold">{label}</span>
       <DatePicker
         selected={date}
-        onChange={(date: Date | null) => {
-          if (date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, "0");
-            const day = String(date.getDate()).padStart(2, "0");
+        onChange={(d: Date | null) => {
+          if (d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
             onChange(`${year}-${month}-${day}`);
           } else {
             onChange("");
@@ -806,4 +810,3 @@ function DateInput({
     </label>
   );
 }
-

@@ -1,7 +1,5 @@
 import React from "react";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-// @ts-ignore
 import "../globals.css"; // ใช้ global style ของคุณ
 
 export default function SettingLayout({

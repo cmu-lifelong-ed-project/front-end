@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { getUserEdge } from "@/lib/api/user";
+import { getUserEdge } from "@/lib/api/user-middleware";
 
 const AUTH_COOKIE = "backend-api-token";
 

@@ -12,7 +12,7 @@ import {
   hexToRgba,
   QUEUE_NUMBER_PURPLE,
   getProgressColor,
-} from "../lib/ui";
+} from "../../lib/ui";
 
 interface SortableCardProps {
   item: ListQueue;
@@ -32,7 +32,6 @@ export default function SortableCard({
   courseStatusList,
   progressDone = 0,
   progressTotal = 0,
-  token,
   canDrag,
 }: SortableCardProps) {
   const percent = Math.max(
@@ -174,7 +173,6 @@ export default function SortableCard({
               value={item.staff_status?.status ?? "-"}
               labelPad="ml-3"
             />
-
           </div>
 
           <div className="md:col-span-4 w-full">

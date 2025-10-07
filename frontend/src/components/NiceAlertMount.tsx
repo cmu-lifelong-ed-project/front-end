@@ -1,32 +1,45 @@
 "use client";
 
-import React from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle } from "lucide-react";
 
 type Toast = { id: number; text: string };
 
-export default function NiceAlertMount() {
-  const [toasts, setToasts] = React.useState<Toast[]>([]);
+declare global {
+  interface Window {
+    __niceAlert?: (text: string) => void;
+  }
+}
 
-  React.useEffect(() => {
+export default function NiceAlertMount() {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+
     const originalAlert = window.alert;
-    (window as any).__niceAlert = (text: string) => {
+    window.__niceAlert = (text: string) => {
       const id = Date.now() + Math.random();
       setToasts((prev) => [...prev, { id, text }]);
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
       }, 2600);
     };
-    window.alert = (msg?: any) => {
-      (window as any).__niceAlert(String(msg ?? ""));
+
+    // ✅ กำหนด type ของ msg เป็น unknown แทน any
+    window.alert = (msg?: unknown) => {
+      const message = String(msg ?? "");
+      window.__niceAlert?.(message);
     };
+
     return () => {
       window.alert = originalAlert;
     };
   }, []);
 
-  if (typeof document === "undefined") return null;
+  if (!mounted) return null;
 
   return createPortal(
     <>
@@ -43,11 +56,12 @@ export default function NiceAlertMount() {
                 <AlertCircle className="h-4 w-4 text-[#6C63FF]" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold text-gray-800">แจ้งเตือน</div>
+                <div className="text-sm font-semibold text-gray-800">
+                  แจ้งเตือน
+                </div>
                 <div className="truncate text-sm text-gray-600">{t.text}</div>
               </div>
             </div>
-            
           </div>
         ))}
       </div>

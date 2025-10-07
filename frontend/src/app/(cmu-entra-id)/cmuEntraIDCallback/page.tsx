@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Loader from "@/components/Loader";
 import CallbackClient from "./CallbackClient";
 
-export default function Page() {
+export default function CmuEntraIDCallback() {
   return (
     <Suspense
       fallback={

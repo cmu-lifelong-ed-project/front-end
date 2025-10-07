@@ -18,8 +18,3 @@ export type User = {
   itaccounttype_en: string;
   is_first_time: boolean;
 };
-
-export type UpdateUserInfoInput = {
-  role?: string;
-  organization_name_th?: string;
-};
