@@ -8,17 +8,21 @@ This project is the **Frontend** for the Course & Queue Management System develo
 
 ```bash
 front-end/
-├── src/                     # Main source code
-│   ├── app/                 # Next.js App Router
-│   ├── components/          # Reusable UI Components
-│   ├── lib/                 # Utility functions (axios, datetime, etc.)
-│   ├── types/               # TypeScript type definitions
-│   └── ...                 
-├── public/                  # Static assets (icons, images)
-├── next.config.mjs          # Next.js configuration
-├── package.json
-├── tsconfig.json
-└── README.md
+├── src/                            # Main source code
+│   ├── app/                        # Next.js App Router (page routing & layouts)
+│   ├── components/                 # Reusable UI components (modals, tables, etc.)
+│   ├── lib/                        # Utility functions (axios instance, date utils, etc.)
+│   ├── types/                      # Global TypeScript interfaces & types
+│   └── middleware.ts               # Route middleware for authentication & redirect
+├── public/                         # Static assets (icons, logos, images)
+├── .env                            # Environment variables (not committed)
+├── .gitignore                      # Git ignore rules
+├── global.d.ts                     # Global type declarations
+├── eslint.config.mjs               # ESLint configuration
+├── next.config.ts                  # Next.js configuration file
+├── package.json                    # Project dependencies and scripts
+├── tsconfig.json                   # TypeScript configuration
+└── README.md                       # Project documentation
 ```
 
 ---
