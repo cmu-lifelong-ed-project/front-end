@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
 import { RoleKey, ROLE_ITEMS, ROLE_LABEL, ROLE_HEADING } from "@/lib/role";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const isValidEmail = (value: string) =>
   /^[^\s@]+@cmu\.ac\.th$/i.test(value.trim());
 
@@ -44,7 +46,7 @@ export default function EditUser() {
   // โหลดรายชื่อ faculty
   useEffect(() => {
     if (!token) return;
-    fetch("http://localhost:8080/api/faculty", {
+    fetch(`${API_URL}/faculty`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -84,7 +86,7 @@ export default function EditUser() {
     }
 
     try {
-      await fetch(`http://localhost:8080/api/user/updateinfo/${value}`, {
+      await fetch(`${API_URL}/user/updateinfo/${value}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

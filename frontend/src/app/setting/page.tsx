@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
 import { RoleKey, ROLE_BADGE } from "@/lib/role";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 type User = {
   id: string;
   firstname_th?: string;
@@ -48,7 +50,7 @@ export default function SettingUsersPreview() {
 
     const fetchUsers = async () => {
       try {
-        const res = await fetch("http://localhost:8080/api/user/all", {
+        const res = await fetch(`${API_URL}/user/all`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("โหลดข้อมูลผู้ใช้ไม่สำเร็จ");
@@ -116,13 +118,10 @@ export default function SettingUsersPreview() {
     }
     try {
       setDeleting(true);
-      const res = await fetch(
-        `http://localhost:8080/api/user/${pendingDelete.id}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await fetch(`${API_URL}/user/${pendingDelete.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error("ลบไม่สำเร็จ");
       setUsers((prev) => prev.filter((u) => u.id !== pendingDelete.id));
       setConfirmOpen(false);

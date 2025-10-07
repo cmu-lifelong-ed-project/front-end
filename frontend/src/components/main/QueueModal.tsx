@@ -10,6 +10,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import { FaRegCalendarAlt } from "react-icons/fa"; // react-icons
 import { SquarePen, Trash2 } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 type Props = {
   isOpen: boolean;
   editMode: boolean;
@@ -181,13 +183,10 @@ export default function QueueModal(props: Props) {
     if (!om?.order?.id) return;
     try {
       setDeletingId(om.id);
-      const res = await fetch(
-        `http://localhost:8080/api/order/${om.order.id}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await fetch(`${API_URL}/order/${om.order.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error("Delete order failed");
 
       setOrderMappings((prev) => {
@@ -652,21 +651,18 @@ export default function QueueModal(props: Props) {
                         onClick={async () => {
                           if (!newOrderTitle || !currentId) return;
                           try {
-                            const res = await fetch(
-                              "http://localhost:8080/api/order",
-                              {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  Authorization: `Bearer ${token}`,
-                                },
-                                credentials: "include",
-                                body: JSON.stringify({
-                                  list_queue_id: currentId,
-                                  title: newOrderTitle,
-                                }),
-                              }
-                            );
+                            const res = await fetch(`${API_URL}/order`, {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                              },
+                              credentials: "include",
+                              body: JSON.stringify({
+                                list_queue_id: currentId,
+                                title: newOrderTitle,
+                              }),
+                            });
                             if (!res.ok) throw new Error("Create order failed");
                             const newOrder = await res.json();
 

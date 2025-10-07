@@ -108,11 +108,11 @@ export async function POST(req: NextRequest) {
     );
 
     // POST user data ไป backend api
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:8080";
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL;
 
     let backendToken: string | null = null;
     try {
-      const res = await axios.post(`${backendUrl}/api/auth`, {
+      const res = await axios.post(`${backendUrl}/auth`, {
         cmuitaccount_name: cmuBasicInfo.cmuitaccount_name,
         cmuitaccount: cmuBasicInfo.cmuitaccount,
         student_id: cmuBasicInfo.student_id,

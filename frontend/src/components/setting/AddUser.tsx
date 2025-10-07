@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getCookie } from "@/lib/cookie";
 import { RoleKey, ROLE_ITEMS, ROLE_LABEL, ROLE_HEADING } from "@/lib/role";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const isValidEmail = (value: string) =>
   /^[^\s@]+@cmu\.ac\.th$/i.test(value.trim());
 
@@ -54,7 +56,7 @@ export default function AddUser() {
     }
 
     try {
-      await fetch(`http://localhost:8080/api/user/${value}/${role}`, {
+      await fetch(`${API_URL}/user/${value}/${role}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
