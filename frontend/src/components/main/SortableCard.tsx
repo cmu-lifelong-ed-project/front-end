@@ -5,8 +5,6 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import DateLeftCountdown from "./DateLeftCountdown";
 import { ListQueue } from "@/types/api/queue";
-import { CourseStatus } from "@/types/api/status";
-import { Faculty } from "@/types/api/faculty";
 import {
   getStatusColorByName,
   hexToRgba,
@@ -17,22 +15,20 @@ import {
 interface SortableCardProps {
   item: ListQueue;
   onEdit: () => void;
-  facultyList: Faculty[];
-  courseStatusList: CourseStatus[];
   progressDone?: number;
   progressTotal?: number;
   token: string;
   canDrag: boolean; // รับ prop จาก QueuePage
+  role: string;
 }
 
 export default function SortableCard({
   item,
   onEdit,
-  facultyList,
-  courseStatusList,
   progressDone = 0,
   progressTotal = 0,
   canDrag,
+  role,
 }: SortableCardProps) {
   const percent = Math.max(
     0,
@@ -54,18 +50,22 @@ export default function SortableCard({
     transition,
   } as React.CSSProperties;
 
-  const facultyNameTH =
-    facultyList.find((f) => String(f.id) === String(item.faculty.id))?.nameTH ||
-    "Unknown Faculty";
-  const courseStatusName =
-    courseStatusList.find((c) => c.id === item.course_status_id)?.status ||
-    "Not Started";
+  const courseStatusName = item.course_status.status || "Not Started";
+  const staffName =
+    `${item.staff.firstname_th} ${item.staff.lastname_th}` || "-";
+  const facultyNameTH = item.faculty.nameTH || "-";
+  const staffStatusName = item.staff_status?.status || "-";
 
   const mainColor = getStatusColorByName(courseStatusName);
   const containerBgTint = hexToRgba(mainColor, 0.08);
   const badgeFill = hexToRgba(mainColor, 0.3);
   const badgeBorder = mainColor;
   const barColorClass = getProgressColor(percent);
+
+  const canSeeStaff = role === "admin" || role === "staff" || role === "LE";
+  const canSeeStaffStatus = role === "admin" || role === "staff";
+  const canSeeNote = role === "admin" || role === "staff";
+  const canSeeDateLeft = role === "admin" || role === "staff";
 
   return (
     <li
@@ -113,9 +113,14 @@ export default function SortableCard({
             </div>
           </div>
 
-          <div className="justify-self-end">
-            <DateLeftCountdown deadlineISO={item.on_web} colorHex={mainColor} />
-          </div>
+          {canSeeDateLeft && item.on_web && (
+            <div className="justify-self-end">
+              <DateLeftCountdown
+                deadlineISO={item.on_web}
+                colorHex={mainColor}
+              />
+            </div>
+          )}
         </div>
 
         {/* Body */}
@@ -156,40 +161,46 @@ export default function SortableCard({
               </div>
             </div>
 
-            <Line
-              icon="/Staff ID.png"
-              label="รหัสประจำตัวเจ้าหน้าที่"
-              value={item.staff_id ?? "-"}
-            />
+            {canSeeStaff && (
+              <Line
+                icon="/Staff ID.png"
+                label="รหัสประจำตัวเจ้าหน้าที่"
+                value={staffName}
+              />
+            )}
             <Line
               icon="/Faculty.png"
               label="คณะ"
               value={facultyNameTH}
               labelPad="ml-7 sm:ml-11"
             />
-            <Line
-              icon="/Staff Status.png"
-              label="สถานะเจ้าหน้าที่"
-              value={item.staff_status?.status ?? "-"}
-              labelPad="ml-3"
-            />
-          </div>
-
-          <div className="md:col-span-4 w-full">
-            {item.note ? (
-              <div className="rounded-2xl overflow-hidden bg-white shadow border border-black/5">
-                <div className="px-2 py-2.5 font-semibold flex items-center gap-2">
-                  <span>📝</span>
-                  <span>โน้ต</span>
-                </div>
-                <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-700">
-                  {item.note}
-                </div>
-              </div>
-            ) : (
-              <div />
+            {canSeeStaffStatus && (
+              <Line
+                icon="/Staff Status.png"
+                label="สถานะเจ้าหน้าที่"
+                value={staffStatusName}
+                labelPad="ml-3"
+              />
             )}
           </div>
+
+          {canSeeNote && (
+            <div className="md:col-span-4 w-full">
+              {item.note ? (
+                <div className="rounded-2xl overflow-hidden bg-white shadow border border-black/5">
+                  <div className="px-2 py-2.5 font-semibold flex items-center gap-2">
+                    <span>📝</span>
+                    <span>โน้ต</span>
+                  </div>
+                  <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-700">
+                    {item.note}
+                  </div>
+                </div>
+              ) : (
+                <div />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Edit button */}

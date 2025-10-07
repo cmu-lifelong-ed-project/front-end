@@ -2,7 +2,7 @@ import api, { authHeader } from "@/lib/axios";
 import { CourseStatus } from "@/types/api/status";
 
 //// ============================================================
-////                         staff ขึ้นไป
+////                         user ขึ้นไป
 //// ============================================================
 
 /** GET /course/status

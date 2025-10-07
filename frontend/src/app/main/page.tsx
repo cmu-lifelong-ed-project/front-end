@@ -29,6 +29,7 @@ import {
 import { Faculty } from "@/types/api/faculty";
 import { OrderMapping } from "@/types/api/order";
 import { CourseStatus, StaffStatus } from "@/types/api/status";
+import { User } from "@/types/api/user";
 import { toDatetimeLocal } from "@/lib/datetime";
 import { getCookie } from "@/lib/cookie";
 import {
@@ -43,7 +44,7 @@ import {
 import { getStaffStatuses } from "@/lib/api/staffStatus";
 import { getFaculties } from "@/lib/api/faculty";
 import { getCourseStatuses } from "@/lib/api/courseStatus";
-import { getUser } from "@/lib/api/user";
+import { getStaffs, getUser } from "@/lib/api/user";
 import { updateOrder } from "@/lib/api/order";
 
 const notoSansThai = Noto_Sans_Thai({
@@ -78,6 +79,7 @@ export default function QueuePage() {
   const [staffStatusList, setStaffStatusList] = useState<StaffStatus[]>([]);
   const [facultyList, setFacultyList] = useState<Faculty[]>([]);
   const [courseStatusList, setCourseStatusList] = useState<CourseStatus[]>([]);
+  const [staffList, setStaffList] = useState<User[]>([]);
 
   const [showSuccess, setShowSuccess] = useState<null | {
     mode: "create" | "edit";
@@ -124,9 +126,9 @@ export default function QueuePage() {
         // 2) listqueue ตาม role
         let listQueue: ListQueue[] = [];
         if (role === "user") {
-          listQueue = await getMyListQueues(token);
+          listQueue = await getMyListQueues([], token);
         } else if (role === "officer") {
-          listQueue = await getMyFacultyListQueues(token);
+          listQueue = await getMyFacultyListQueues([], token);
         } else {
           listQueue = await getUnfinishedListQueues(token); // admin, staff, LE
         }
@@ -142,17 +144,23 @@ export default function QueuePage() {
         });
         setProgressMap(map);
 
-        // 4) โหลดข้อมูลเฉพาะ role
+        // 4) โหลดข้อมูล
+
+        // course status (all roles)
+        const courseS = await getCourseStatuses(token);
+        if (cancelled) return;
+        setCourseStatusList(courseS);
+
         if (role === "admin" || role === "staff") {
-          const [staffS, facultyS, courseS] = await Promise.all([
+          const [staffS, facultyS, staffs] = await Promise.all([
             getStaffStatuses(token),
             getFaculties(token),
-            getCourseStatuses(token),
+            getStaffs(token),
           ]);
           if (cancelled) return;
           setStaffStatusList(staffS);
           setFacultyList(facultyS);
-          setCourseStatusList(courseS);
+          setStaffList(staffs);
         }
       } catch (err) {
         if (!cancelled) {
@@ -328,11 +336,26 @@ export default function QueuePage() {
 
   async function filterByCourseStatus(ids: number[]) {
     if (!token) return;
-    const listqueue =
-      ids.length === 0
-        ? await getUnfinishedListQueues(token)
-        : await getListQueuesByCourseStatus(ids, token);
-    setCards(listqueue);
+
+    try {
+      let listqueue: ListQueue[] = [];
+
+      if (userRole === "user") {
+        listqueue = await getMyListQueues(ids, token);
+      } else if (userRole === "officer") {
+        listqueue = await getMyFacultyListQueues(ids, token);
+      } else {
+        if (ids.length === 0) {
+          listqueue = await getUnfinishedListQueues(token);
+        } else {
+          listqueue = await getListQueuesByCourseStatus(ids, token);
+        }
+      }
+      setCards(listqueue);
+    } catch (err) {
+      console.error(err);
+      alert("กรองรายการไม่สำเร็จ");
+    }
   }
 
   return (
@@ -428,6 +451,7 @@ export default function QueuePage() {
           facultyList={facultyList}
           courseStatusList={courseStatusList}
           staffStatusList={staffStatusList}
+          staffList={staffList}
           onSubmit={handleSubmitQueue}
           onClose={() => setShowModal(false)}
           orderMappings={orderMappings}
@@ -461,12 +485,11 @@ export default function QueuePage() {
                     key={item.id}
                     item={item}
                     onEdit={() => handleEditClick(item)}
-                    facultyList={facultyList}
-                    courseStatusList={courseStatusList}
                     progressDone={p.done}
                     progressTotal={p.total}
                     token={token}
                     canDrag={userRole === "admin" || userRole === "staff"}
+                    role={userRole}
                   />
                 );
               })}

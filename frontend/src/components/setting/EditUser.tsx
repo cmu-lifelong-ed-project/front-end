@@ -51,7 +51,6 @@ export default function EditUser() {
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log("Faculty list from API:", data);
         setFacultyList(data);
       })
       .catch((err) => console.error("โหลด faculty ไม่สำเร็จ:", err));

@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { CourseStatus, StaffStatus } from "@/types/api/status";
+import { User } from "@/types/api/user";
 import { Faculty } from "@/types/api/faculty";
 import { OrderMapping } from "@/types/api/order";
 import { updateOrderName } from "@/lib/api/order";
@@ -48,6 +49,7 @@ type Props = {
   facultyList: Faculty[];
   courseStatusList: CourseStatus[];
   staffStatusList: StaffStatus[];
+  staffList: User[];
 
   onSubmit: () => void;
   onClose: () => void;
@@ -100,6 +102,7 @@ export default function QueueModal(props: Props) {
     facultyList,
     courseStatusList,
     staffStatusList,
+    staffList,
     onSubmit,
     onClose,
     orderMappings,
@@ -294,19 +297,33 @@ export default function QueueModal(props: Props) {
             </select>
           </label>
 
-          {/* Staff ID */}
+          {/* ชื่อเจ้าหน้าที่ */}
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold">
-              รหัสประจำตัวเจ้าหน้าที่
+              ผู้รับผิดชอบ (เจ้าหน้าที่)
             </span>
-
-            <input
-              type="number"
-              className={inputBase}
+            <select
+              className={selectBase}
               value={staffId}
               onChange={(e) => setStaffId(e.target.value)}
               required
-            />
+            >
+              <option value="">-- เลือกเจ้าหน้าที่ --</option>
+              {staffList.map((s) => {
+                const name =
+                  [s.firstname_th, s.lastname_th]
+                    .filter(Boolean)
+                    .join(" ")
+                    .trim() ||
+                  s.cmuitaccount?.split("@")[0] ||
+                  `ID ${s.id}`;
+                return (
+                  <option key={s.id} value={String(s.id)}>
+                    {name}
+                  </option>
+                );
+              })}
+            </select>
           </label>
 
           {/* Staff Status */}

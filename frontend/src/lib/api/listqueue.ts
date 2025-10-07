@@ -88,26 +88,31 @@ export async function getListQueuesByCourseStatus(
 ////                        officer ขึ้นไป
 //// ============================================================
 
-/** GET /listqueue/faculty
- *  ดึงเฉพาะ queue ของคณะตัวเอง (derive จาก token)
+/** POST /listqueue/faculty
+ *  ดึงเฉพาะ queue ของคณะตัวเอง + courseStatusIDs สำหรับกรอง ([] = ทุกสถานะ)
  */
 export async function getMyFacultyListQueues(
+  courseStatusIDs: number[],
   token?: string
-): Promise<ListQueue[]> {
-  const res = await api.get("/listqueue/faculty", {
+) {
+  const res = await api.post("/listqueue/faculty", courseStatusIDs, {
     headers: authHeader(token),
   });
   return res.data;
 }
+
 //// ============================================================
 ////                         user ขึ้นไป
 //// ============================================================
 
-/** GET /listqueue/owner
- *  ดึงเฉพาะ queue ของ user เอง
+/** POST /listqueue/owner
+ *  ดึงเฉพาะ queue ของ user เอง + courseStatusIDs สำหรับกรอง ([] = ทุกสถานะ)
  */
-export async function getMyListQueues(token?: string): Promise<ListQueue[]> {
-  const res = await api.get("/listqueue/owner", {
+export async function getMyListQueues(
+  courseStatusIDs: number[],
+  token?: string
+) {
+  const res = await api.post("/listqueue/owner", courseStatusIDs, {
     headers: authHeader(token),
   });
   return res.data;
