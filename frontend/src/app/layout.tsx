@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import NiceAlertMount from "@/components/NiceAlertMount";
 
 export const metadata: Metadata = {
   title: "LE Assistance",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {children}
+        <NiceAlertMount /> 
+      </body>
     </html>
   );
 }
