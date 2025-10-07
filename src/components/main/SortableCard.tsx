@@ -164,7 +164,7 @@ export default function SortableCard({
             {canSeeStaff && (
               <Line
                 icon="/Staff ID.png"
-                label="รหัสประจำตัวเจ้าหน้าที่"
+                label="เจ้าหน้าที่"
                 value={staffName}
               />
             )}
