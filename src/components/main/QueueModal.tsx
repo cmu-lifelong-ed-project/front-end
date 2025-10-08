@@ -9,7 +9,7 @@ import { updateOrderName } from "@/lib/api/order";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FaRegCalendarAlt } from "react-icons/fa"; // react-icons
-import { SquarePen, Trash2 } from "lucide-react";
+import { Plus, SquarePen, Trash2 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -40,7 +40,7 @@ type Props = {
   setOnWeb: (v: string) => void;
   appointmentDateAw: string;
   setAppointmentDateAw: (v: string) => void;
-   owner: string[];
+  owner: string[];
   setOwner: React.Dispatch<React.SetStateAction<string[]>>;
   dateLeft: number;
   setDateLeft: (v: number) => void;
@@ -72,7 +72,28 @@ type Props = {
   ) => void;
 };
 
+// ---- Email helpers ----
+const CMU_EMAIL_RE = /^[^\s@]+@cmu\.ac\.th$/i;
+const normalizeEmail = (s: string) => s.trim().toLowerCase();
+const isValidEmail = (s: string) => CMU_EMAIL_RE.test(normalizeEmail(s));
+const uniq = (arr: string[]) => Array.from(new Set(arr.map(normalizeEmail)));
+const isOwnerListValid = (owners: string[]) =>
+  owners.length === 0 || owners.every(isValidEmail);
 
+// ---- helper สรุปงาน ----
+function summarize(oms: OrderMapping[]) {
+  const total = oms.length;
+  const done = oms.filter((o) => o.checked).length;
+  return { done, total };
+}
+
+// input styles
+const inputBase =
+  "rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm border border-gray-200 text-gray-400 placeholder:text-gray-400";
+const selectBase =
+  "rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm border border-gray-200 text-gray-400";
+const textareaBase =
+  "rounded-2xl px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none border border-gray-200 text-gray-400 placeholder:text-gray-400";
 
 export default function QueueModal(props: Props) {
   const {
@@ -121,6 +142,7 @@ export default function QueueModal(props: Props) {
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [newOrderTitle, setNewOrderTitle] = useState("");
   const [orderView, setOrderView] = useState<"all" | "done">("all");
+  const initialOwnerRef = useRef<string[] | null>(null);
 
   const [editOrder, setEditOrder] = useState<{
     open: boolean;
@@ -212,12 +234,18 @@ export default function QueueModal(props: Props) {
     }
   }
 
-  // ---- helper สรุปงาน ----
-  function summarize(oms: OrderMapping[]) {
-    const total = oms.length;
-    const done = oms.filter((o) => o.checked).length;
-    return { done, total };
-  }
+  const prevIsOpenRef = useRef(false);
+
+  useEffect(() => {
+    const justOpened = isOpen && !prevIsOpenRef.current;
+    if (justOpened) {
+      initialOwnerRef.current = uniq(owner.filter(Boolean));
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, owner]);
+
+  const normalizedOwners = uniq(owner.filter(Boolean));
+  const ownersValid = isOwnerListValid(normalizedOwners);
 
   // ---- summary ใช้ซ้ำ ----
   const totalOrders = orderMappings.length;
@@ -248,14 +276,6 @@ export default function QueueModal(props: Props) {
   }, [currentId, doneOrders, totalOrders, onOrdersChanged]);
 
   if (!isOpen) return null;
-
-  // input styles
-  const inputBase =
-    "rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm border border-gray-200 text-gray-400 placeholder:text-gray-400";
-  const selectBase =
-    "rounded-full px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm border border-gray-200 text-gray-400";
-  const textareaBase =
-    "rounded-2xl px-4 py-3 bg-white shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm resize-none border border-gray-200 text-gray-400 placeholder:text-gray-400";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm p-4">
@@ -304,9 +324,7 @@ export default function QueueModal(props: Props) {
 
           {/* ชื่อเจ้าหน้าที่ */}
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">
-              ผู้รับผิดชอบ (เจ้าหน้าที่)
-            </span>
+            <span className="text-sm font-semibold">เจ้าหน้าที่</span>
             <select
               className={selectBase}
               value={staffId}
@@ -414,51 +432,67 @@ export default function QueueModal(props: Props) {
             inputBase={inputBase}
           />
 
-             
-         {/* Owner */}
-              <div className="flex flex-col gap-2 col-span-1 md:col-span-2">
-                <span className="text-sm font-semibold">ผู้เปิดสอน</span>
-
-                {owner.map((o, i) => {
-                  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o);
-                  return (
-                    <div key={i} className="flex gap-2 items-center">
+          {/* Owner */}
+          <div className="flex flex-col gap-2 col-span-1 md:col-span-2">
+            <span className="text-sm font-semibold">ผู้เปิดสอน</span>
+            <div className="flex flex-col gap-3">
+              {owner.map((o, i) => {
+                const val = o ?? "";
+                const ok = !val || isValidEmail(val);
+                return (
+                  <div key={i} className="space-y-0.5">
+                    <div className="flex gap-2 items-center">
                       <input
                         type="email"
-                        className={`${inputBase} flex-1 ${o && !isValidEmail ? "border-red-500" : ""}`}
-                        value={o}
+                        inputMode="email"
+                        className={`${inputBase} flex-1 ${
+                          val && !ok ? "border-red-500" : ""
+                        }`}
+                        value={val}
                         onChange={(e) => {
-                          const newOwner = [...owner];
-                          newOwner[i] = e.target.value.trim();
-                          setOwner(newOwner);
+                          const v = normalizeEmail(e.target.value);
+                          setOwner((prev) => {
+                            const next = [...prev];
+                            next[i] = v;
+                            return next;
+                          });
                         }}
                         placeholder="example@cmu.ac.th"
+                        aria-invalid={!!val && !ok}
                       />
-                      {owner.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setOwner(owner.filter((_, idx) => idx !== i))}
-                          className="text-red-500 font-bold"
-                        >
-                          ลบ
-                        </button>
-                      )}
-                      {!isValidEmail && o && (
-                        <span className="text-red-500 text-sm ml-2">Email ไม่ถูกต้อง</span>
-                      )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOwner(owner.filter((_, idx) => idx !== i))
+                        }
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">ลบผู้เปิดสอน</span>
+                      </button>
                     </div>
-                  );
-                })}
+                    {val && !ok && (
+                      <span className="text-red-500 text-xs ml-2">
+                        ต้องเป็นอีเมล @cmu.ac.th เท่านั้น
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-                <button
-                  type="button"
-                  onClick={() => setOwner([...owner, ""])}
-                  className="mt-1 text-blue-600 font-semibold"
-                >
-                  + เพิ่มผู้เปิดสอน
-                </button>
-              </div>
-
+            <div className="flex items-center gap-3 mt-1">
+              <button
+                type="button"
+                onClick={() => setOwner([...owner, ""])}
+                className="flex items-center justify-center gap-1 w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#8741D9] text-white text-sm font-semibold hover:bg-[#5a54d6]"
+              >
+                <Plus className="h-4 w-4" strokeWidth={2.5} />
+                เพิ่มผู้เปิดสอน
+              </button>
+            </div>
+          </div>
 
           {/* Orders */}
           {orderMappings?.length > 0 && (
@@ -597,7 +631,7 @@ export default function QueueModal(props: Props) {
                             className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 transition"
                           >
                             <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">ลบ</span>
+                            <span className="sr-only">ลบเตือนความจำ</span>
                           </button>
                         </div>
                       </div>
@@ -610,9 +644,10 @@ export default function QueueModal(props: Props) {
                 <button
                   type="button"
                   onClick={() => setShowAddOrder(true)}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#8741D9] text-white text-sm font-semibold hover:bg-[#5a54d6]"
+                  className="flex items-center justify-center gap-1 w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#8741D9] text-white text-sm font-semibold hover:bg-[#5a54d6]"
                 >
-                  + เตือนความจำใหม่
+                  <Plus className="h-4 w-4" strokeWidth={2.5} />
+                  เตือนความจำใหม่
                 </button>
               </div>
 
@@ -804,7 +839,8 @@ export default function QueueModal(props: Props) {
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-full bg-[#8741D9] hover:bg-[#4a44b8] text-white text-sm font-semibold"
+              className="px-5 py-2 rounded-full bg-[#8741D9] hover:bg-[#4a44b8] text-white text-sm font-semibold disabled:opacity-60"
+              disabled={!ownersValid}
             >
               {editMode ? "บันทึก" : "Create"}
             </button>
