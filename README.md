@@ -144,10 +144,13 @@ Then visit 👉 [http://localhost:3000](http://localhost:3000)
 ## 🏫 Acknowledgement
 
 This project was developed as a **Senior Project** for the  
-**Department of Computer Engineering, Faculty of Engineering, Chiang Mai University.**  
+**Department of Computer Engineering, Faculty of Engineering, Chiang Mai University.**
 
 Developed by:  
-**Jiradate Oratai**, **Nontapan Chanadee**, **Thatthana Sringoen**, and **Surapa Luangpiwdet**  
+**Jiradate Oratai**, **Nontapan Chanadee**, **Thatthana Sringoen**, and **Surapa Luangpiwdet**
+
+Project Advisor:  
+**Kampol Woradit**
 
 in collaboration with the  
 **Chiang Mai University School of Lifelong Education**,  
