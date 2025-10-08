@@ -52,6 +52,11 @@ async function getCMUBasicInfoAsync(accessToken: string) {
   }
 }
 
+export async function GET() {
+  const redirectUrl = process.env.CMU_ENTRAID_URL as string;
+  return NextResponse.redirect(redirectUrl);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { authorizationCode } = await req.json();
