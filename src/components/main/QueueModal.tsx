@@ -40,7 +40,8 @@ type Props = {
   setOnWeb: (v: string) => void;
   appointmentDateAw: string;
   setAppointmentDateAw: (v: string) => void;
-
+   owner: string[];
+  setOwner: React.Dispatch<React.SetStateAction<string[]>>;
   dateLeft: number;
   setDateLeft: (v: number) => void;
   note: string;
@@ -70,6 +71,8 @@ type Props = {
     summary: { done: number; total: number }
   ) => void;
 };
+
+
 
 export default function QueueModal(props: Props) {
   const {
@@ -111,6 +114,8 @@ export default function QueueModal(props: Props) {
     onToggleOrder,
     token,
     onOrdersChanged,
+    owner,
+    setOwner,
   } = props;
 
   const [showAddOrder, setShowAddOrder] = useState(false);
@@ -408,6 +413,52 @@ export default function QueueModal(props: Props) {
             onChange={setAppointmentDateAw}
             inputBase={inputBase}
           />
+
+             
+         {/* Owner */}
+              <div className="flex flex-col gap-2 col-span-1 md:col-span-2">
+                <span className="text-sm font-semibold">ผู้เปิดสอน</span>
+
+                {owner.map((o, i) => {
+                  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o);
+                  return (
+                    <div key={i} className="flex gap-2 items-center">
+                      <input
+                        type="email"
+                        className={`${inputBase} flex-1 ${o && !isValidEmail ? "border-red-500" : ""}`}
+                        value={o}
+                        onChange={(e) => {
+                          const newOwner = [...owner];
+                          newOwner[i] = e.target.value.trim();
+                          setOwner(newOwner);
+                        }}
+                        placeholder="example@cmu.ac.th"
+                      />
+                      {owner.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setOwner(owner.filter((_, idx) => idx !== i))}
+                          className="text-red-500 font-bold"
+                        >
+                          ลบ
+                        </button>
+                      )}
+                      {!isValidEmail && o && (
+                        <span className="text-red-500 text-sm ml-2">Email ไม่ถูกต้อง</span>
+                      )}
+                    </div>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  onClick={() => setOwner([...owner, ""])}
+                  className="mt-1 text-blue-600 font-semibold"
+                >
+                  + เพิ่มผู้เปิดสอน
+                </button>
+              </div>
+
 
           {/* Orders */}
           {orderMappings?.length > 0 && (
