@@ -40,7 +40,8 @@ type Props = {
   setOnWeb: (v: string) => void;
   appointmentDateAw: string;
   setAppointmentDateAw: (v: string) => void;
-
+   owner: string[];
+  setOwner: React.Dispatch<React.SetStateAction<string[]>>;
   dateLeft: number;
   setDateLeft: (v: number) => void;
   note: string;
@@ -70,6 +71,8 @@ type Props = {
     summary: { done: number; total: number }
   ) => void;
 };
+
+
 
 export default function QueueModal(props: Props) {
   const {
@@ -111,6 +114,8 @@ export default function QueueModal(props: Props) {
     onToggleOrder,
     token,
     onOrdersChanged,
+    owner,
+    setOwner,
   } = props;
 
   const [showAddOrder, setShowAddOrder] = useState(false);
@@ -408,6 +413,20 @@ export default function QueueModal(props: Props) {
             onChange={setAppointmentDateAw}
             inputBase={inputBase}
           />
+
+             {/* Owner */} 
+            <label className="flex flex-col gap-1 col-span-2">
+              <span className="text-sm font-semibold">ผู้เปิดสอน</span>
+              <input
+                type="email"
+                className={inputBase}
+                value={owner[0] || ""}
+                onChange={(e) => setOwner([e.target.value.trim()])}
+                placeholder="example@cmu.ac.th"
+              />
+            </label>
+
+
 
           {/* Orders */}
           {orderMappings?.length > 0 && (

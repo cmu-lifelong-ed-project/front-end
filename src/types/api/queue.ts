@@ -39,6 +39,7 @@ export type CreateListQueueInput = {
   course_status_id: number;
   wordfile_submit: string;
   info_submit: string;
+  owner: string[];
   info_submit_14days: string;
   time_register: string;
   on_web: string;
