@@ -293,7 +293,7 @@ export default function QueueModal(props: Props) {
         >
           {/* Title */}
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold">ชื่อเรื่อง</span>
+            <span className="text-sm font-semibold">ชื่อหลักสูตร</span>
             <input
               type="text"
               className={inputBase}
@@ -434,7 +434,7 @@ export default function QueueModal(props: Props) {
 
           {/* Owner */}
           <div className="flex flex-col gap-2 col-span-1 md:col-span-2">
-            <span className="text-sm font-semibold">ผู้เปิดสอน</span>
+            <span className="text-sm font-semibold">ผู้รับผิดชอบหลักสูตร</span>
             <div className="flex flex-col gap-3">
               {owner.map((o, i) => {
                 const val = o ?? "";
@@ -469,7 +469,7 @@ export default function QueueModal(props: Props) {
                         className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 transition"
                       >
                         <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">ลบผู้เปิดสอน</span>
+                        <span className="sr-only">ลบผู้รับผิดชอบหลักสูตร</span>
                       </button>
                     </div>
                     {val && !ok && (
@@ -489,7 +489,7 @@ export default function QueueModal(props: Props) {
                 className="flex items-center justify-center gap-1 w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#8741D9] text-white text-sm font-semibold hover:bg-[#5a54d6]"
               >
                 <Plus className="h-4 w-4" strokeWidth={2.5} />
-                เพิ่มผู้เปิดสอน
+                เพิ่มผู้รับผิดชอบหลักสูตร
               </button>
             </div>
           </div>

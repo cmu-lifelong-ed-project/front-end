@@ -53,15 +53,14 @@ async function getCMUBasicInfoAsync(accessToken: string) {
 }
 
 export async function GET() {
+  const authBaseUrl = process.env.CMU_ENTRAID_URL;
   const clientId = process.env.CMU_ENTRAID_CLIENT_ID;
-  const clientSecret = process.env.CMU_ENTRAID_CLIENT_SECRET!;
+  const clientSecret = process.env.CMU_ENTRAID_CLIENT_SECRET;
   const redirectUrl = process.env.CMU_ENTRAID_REDIRECT_URL;
   const scope = process.env.SCOPE;
 
-  if (!clientId || !clientSecret || !redirectUrl || !scope) {
-    console.error(
-      "Missing critical CMU EntraID environment variables for GET redirect."
-    );
+  if (!authBaseUrl || !clientId || !clientSecret || !redirectUrl || !scope) {
+    console.error("Missing critical CMU EntraID environment variables.");
     return NextResponse.json(
       {
         ok: false,
@@ -71,8 +70,6 @@ export async function GET() {
     );
   }
 
-  const authBaseUrl =
-    "https://login.microsoftonline.com/cf81f1df-de59-4c29-91da-a2dfd04aa751/oauth2/v2.0/authorize";
   const url = new URL(authBaseUrl);
 
   url.searchParams.append("response_type", "code");
