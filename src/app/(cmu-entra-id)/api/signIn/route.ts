@@ -54,10 +54,11 @@ async function getCMUBasicInfoAsync(accessToken: string) {
 
 export async function GET() {
   const clientId = process.env.CMU_ENTRAID_CLIENT_ID;
+  const clientSecret = process.env.CMU_ENTRAID_CLIENT_SECRET!;
   const redirectUrl = process.env.CMU_ENTRAID_REDIRECT_URL;
   const scope = process.env.SCOPE;
 
-  if (!clientId || !redirectUrl || !scope) {
+  if (!clientId || !clientSecret || !redirectUrl || !scope) {
     console.error(
       "Missing critical CMU EntraID environment variables for GET redirect."
     );
@@ -76,6 +77,7 @@ export async function GET() {
 
   url.searchParams.append("response_type", "code");
   url.searchParams.append("client_id", clientId);
+  url.searchParams.append("client_secret", clientSecret);
   url.searchParams.append("redirect_uri", redirectUrl);
   url.searchParams.append("scope", scope);
   url.searchParams.append("state", "xyz");
