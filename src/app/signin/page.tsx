@@ -1,7 +1,5 @@
 import Image from "next/image";
 
-const CmuentraidURL = process.env.CMU_ENTRAID_URL as string;
-
 export default function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#dcc0f2] px-4">
@@ -18,7 +16,7 @@ export default function SignInPage() {
         </div>
 
         {/* Button */}
-        <a href={CmuentraidURL}>
+        <a href="/api/signIn">
           <button className="w-full bg-gradient-to-r from-purple-800 to-purple-400 text-white font-semibold py-3 rounded-full shadow-md text-base md:text-lg lg:text-xl">
             Sign-in with CMU Account
           </button>
