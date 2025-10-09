@@ -53,8 +53,34 @@ async function getCMUBasicInfoAsync(accessToken: string) {
 }
 
 export async function GET() {
-  const redirectUrl = process.env.CMU_ENTRAID_URL as string;
-  return NextResponse.redirect(redirectUrl);
+  const clientId = process.env.CMU_ENTRAID_CLIENT_ID;
+  const redirectUrl = process.env.CMU_ENTRAID_REDIRECT_URL;
+  const scope = process.env.SCOPE;
+
+  if (!clientId || !redirectUrl || !scope) {
+    console.error(
+      "Missing critical CMU EntraID environment variables for GET redirect."
+    );
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Server configuration error: Missing CMU EntraID credentials.",
+      },
+      { status: 500 }
+    );
+  }
+
+  const authBaseUrl =
+    "https://login.microsoftonline.com/cf81f1df-de59-4c29-91da-a2dfd04aa751/oauth2/v2.0/authorize";
+  const url = new URL(authBaseUrl);
+
+  url.searchParams.append("response_type", "code");
+  url.searchParams.append("client_id", clientId);
+  url.searchParams.append("redirect_uri", redirectUrl);
+  url.searchParams.append("scope", scope);
+  url.searchParams.append("state", "xyz");
+
+  return NextResponse.redirect(url.toString());
 }
 
 export async function POST(req: NextRequest) {
