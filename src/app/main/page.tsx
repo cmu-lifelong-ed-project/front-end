@@ -176,70 +176,67 @@ export default function QueuePage() {
   }, [token]);
 
   function handleSubmitQueue() {
-  if (!token) {
-    alert("No auth token found.");
-    return;
+    if (!token) {
+      alert("No auth token found.");
+      return;
+    }
+
+    if (
+      !wordfileSubmit ||
+      !infoSubmit ||
+      !infoSubmit14days ||
+      !timeRegister ||
+      !onWeb ||
+      !appointmentDateAw
+    ) {
+      alert("กรุณากรอกวันเวลาทุกช่องให้ครบ");
+      return;
+    }
+
+    // ทำให้ owner เป็น array ของ string แน่นอน
+    const ownerArray = owner.map((o) => o.trim()).filter((o) => o.length > 0);
+
+    const body: CreateListQueueInput = {
+      title,
+      staff_id: Number(staffId),
+      faculty_id: Number(faculty),
+      staff_status_id: Number(staffStatusId),
+      course_status_id: Number(courseStatusId),
+      wordfile_submit: new Date(wordfileSubmit).toISOString(),
+      info_submit: new Date(infoSubmit).toISOString(),
+      info_submit_14days: new Date(infoSubmit14days).toISOString(),
+      time_register: new Date(timeRegister).toISOString(),
+      on_web: new Date(onWeb).toISOString(),
+      appointment_date_aw: new Date(appointmentDateAw).toISOString(),
+      owner: ownerArray, // ✅ array ของ string
+      note,
+    };
+
+    const doRequest = editMode
+      ? updateListQueue(
+          { ...(body as UpdateListQueueInput), id: Number(editingItemId) },
+          token
+        )
+      : createListQueue(body, token);
+
+    doRequest
+      .then((updatedItem) => {
+        setShowSuccess({ mode: editMode ? "edit" : "create" });
+        setShowModal(false);
+        resetForm();
+
+        setCards((prev) => {
+          const next = editMode
+            ? prev.map((c) => (c.id === updatedItem.id ? updatedItem : c))
+            : [...prev, updatedItem];
+          return [...next].filter((c) => c.priority !== 0);
+        });
+
+        const summary = summarizeMappings(updatedItem.order_mappings || []);
+        setProgressMap((prev) => ({ ...prev, [updatedItem.id]: summary }));
+      })
+      .catch((err) => alert(err.message));
   }
-
-  if (
-    !wordfileSubmit ||
-    !infoSubmit ||
-    !infoSubmit14days ||
-    !timeRegister ||
-    !onWeb ||
-    !appointmentDateAw
-  ) {
-    alert("กรุณากรอกวันเวลาทุกช่องให้ครบ");
-    return;
-  }
-
-  // ทำให้ owner เป็น array ของ string แน่นอน
-  const ownerArray = owner
-    .map((o) => o.trim())
-    .filter((o) => o.length > 0);
-
-  const body: CreateListQueueInput = {
-    title,
-    staff_id: Number(staffId),
-    faculty_id: Number(faculty),
-    staff_status_id: Number(staffStatusId),
-    course_status_id: Number(courseStatusId),
-    wordfile_submit: new Date(wordfileSubmit).toISOString(),
-    info_submit: new Date(infoSubmit).toISOString(),
-    info_submit_14days: new Date(infoSubmit14days).toISOString(),
-    time_register: new Date(timeRegister).toISOString(),
-    on_web: new Date(onWeb).toISOString(),
-    appointment_date_aw: new Date(appointmentDateAw).toISOString(),
-    owner: ownerArray, // ✅ array ของ string
-    note,
-  };
-
-  const doRequest = editMode
-    ? updateListQueue(
-        { ...(body as UpdateListQueueInput), id: Number(editingItemId) },
-        token
-      )
-    : createListQueue(body, token);
-
-  doRequest
-    .then((updatedItem) => {
-      setShowSuccess({ mode: editMode ? "edit" : "create" });
-      setShowModal(false);
-      resetForm();
-
-      setCards((prev) => {
-        const next = editMode
-          ? prev.map((c) => (c.id === updatedItem.id ? updatedItem : c))
-          : [...prev, updatedItem];
-        return [...next];
-      });
-
-      const summary = summarizeMappings(updatedItem.order_mappings || []);
-      setProgressMap((prev) => ({ ...prev, [updatedItem.id]: summary }));
-    })
-    .catch((err) => alert(err.message));
-}
-
 
   function resetForm() {
     setTitle("");
@@ -288,7 +285,6 @@ export default function QueuePage() {
     setOrderMappings(item.order_mappings || []);
     setCurrentId(item.id);
     setOwner(item.owner?.length ? item.owner : []);
-
   }
 
   async function handleDragEnd(event: DragEndEvent) {
