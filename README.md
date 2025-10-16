@@ -62,7 +62,6 @@ NEXT_PUBLIC_API_URL=
 ```bash
 npm run dev
 ```
-Then open 👉 [http://localhost:3000](http://localhost:3000)
 
 ---
 
@@ -93,6 +92,7 @@ Then open 👉 [http://localhost:3000](http://localhost:3000)
 | `CMU_ENTRAID_LOGOUT_URL` | Logout endpoint |
 | `JWT_SECRET` | Used for verifying JWT tokens |
 | `NEXT_PUBLIC_API_URL` | Base URL of backend API |
+| `NEXT_PUBLIC_BASE_PATH` | Base path where the app is hosted |
 
 ---
 
@@ -127,7 +127,10 @@ The interface dynamically adapts based on the user’s role:
 - Compatible with **macOS / Linux / WSL**  
 - Use `"use client"` only where necessary  
 - Axios configuration located in `src/lib/axios.ts`  
-- Token is stored in the `backend-api-token` cookie  
+- Token is stored in the `backend-api-token` cookie
+- Base URL: `https://www.lifelong.cmu.ac.th/queue-doc/`
+- Backend API: `https://www.lifelong.cmu.ac.th/queue-doc-api/api`
+- Internal container ports: frontend 3000 / backend 2000
 
 ---
 
@@ -137,8 +140,6 @@ The interface dynamically adapts based on the user’s role:
 npm run build
 npm run start
 ```
-Then visit 👉 [http://localhost:3000](http://localhost:3000)
-
 ---
 
 ## 🏫 Acknowledgement
