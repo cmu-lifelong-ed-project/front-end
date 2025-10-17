@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import type { SignInResponse } from "../api/signIn/route";
 import Loader from "@/components/Loader";
 
+const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 export default function CallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -17,7 +19,7 @@ export default function CallbackClient() {
     if (!code) return;
 
     axios
-      .post<SignInResponse>("/api/signIn", { authorizationCode: code })
+      .post<SignInResponse>(`${base}/api/signIn`, { authorizationCode: code })
       .then((resp) => {
         if (resp.data.ok) router.push("/main");
       })
