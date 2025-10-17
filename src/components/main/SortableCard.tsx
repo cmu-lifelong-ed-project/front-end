@@ -165,20 +165,20 @@ export default function SortableCard({
 
             {canSeeStaff && (
               <Line
-                icon={`${base}/Staff ID.png`}
+                icon={"Staff ID.png"}
                 label="เจ้าหน้าที่"
                 value={staffName}
               />
             )}
             <Line
-              icon={`${base}/Faculty.png`}
+              icon={"Faculty.png"}
               label="คณะ"
               value={facultyNameTH}
               labelPad="ml-7 sm:ml-11"
             />
             {canSeeStaffStatus && (
               <Line
-                icon={`${base}/Staff Status.png`}
+                icon={"Staff Status.png"}
                 label="สถานะเจ้าหน้าที่"
                 value={staffStatusName}
                 labelPad="ml-3"

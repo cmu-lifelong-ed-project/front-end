@@ -62,7 +62,7 @@ export default function Navbar() {
 
   const handleSignOut = async () => {
     try {
-      const res = await fetch("/api/signOut", { method: "POST" });
+      const res = await fetch(`${base}/api/signOut`, { method: "POST" });
       const data = await res.json();
       if (data.ok) {
         router.push("/");

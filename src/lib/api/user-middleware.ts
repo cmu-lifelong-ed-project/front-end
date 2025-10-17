@@ -7,17 +7,21 @@
 
 export async function getUserEdge(token?: string) {
   if (!token) return undefined;
+
+  const base = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL; // ✅ ใช้ INTERNAL ก่อน
+  const url = `${base}/user/me`;
+
   const ctrl = new AbortController();
   const timeout = setTimeout(() => ctrl.abort(), 2000);
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/me`, {
+    const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
       signal: ctrl.signal,
     });
     if (!res.ok) return undefined;
-    return await res.json();
+    return (await res.json()) as { role?: string };
   } catch {
     return undefined;
   } finally {

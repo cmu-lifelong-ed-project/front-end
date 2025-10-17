@@ -1,6 +1,5 @@
 import React from "react";
 import Navbar from "@/components/Navbar";
-import "../globals.css"; // ใช้ global style ของคุณ
 
 export default function SettingLayout({
   children,

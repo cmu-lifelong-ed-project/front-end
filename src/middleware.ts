@@ -18,8 +18,12 @@ const isAdminOnly = (p: string) =>
   ADMIN_ONLY_PATHS.some((base) => p === base || p.startsWith(base + "/"));
 
 async function fetchUserRole(token: string): Promise<string | undefined> {
-  const user = await getUserEdge(token);
-  return user.role;
+  try {
+    const user = await getUserEdge(token);
+    return user?.role;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function middleware(req: NextRequest) {

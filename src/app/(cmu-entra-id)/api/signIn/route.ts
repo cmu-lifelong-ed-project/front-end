@@ -138,7 +138,8 @@ export async function POST(req: NextRequest) {
     );
 
     // POST user data ไป backend api
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+    const backendUrl =
+      process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL!;
 
     let backendToken: string | null = null;
     try {
