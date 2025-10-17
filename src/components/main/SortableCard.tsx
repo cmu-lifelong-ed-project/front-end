@@ -12,6 +12,8 @@ import {
   getProgressColor,
 } from "../../lib/ui";
 
+const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 interface SortableCardProps {
   item: ListQueue;
   onEdit: () => void;
@@ -163,20 +165,20 @@ export default function SortableCard({
 
             {canSeeStaff && (
               <Line
-                icon="/Staff ID.png"
+                icon={`${base}/Staff ID.png`}
                 label="เจ้าหน้าที่"
                 value={staffName}
               />
             )}
             <Line
-              icon="/Faculty.png"
+              icon={`${base}/Faculty.png`}
               label="คณะ"
               value={facultyNameTH}
               labelPad="ml-7 sm:ml-11"
             />
             {canSeeStaffStatus && (
               <Line
-                icon="/Staff Status.png"
+                icon={`${base}/Staff Status.png`}
                 label="สถานะเจ้าหน้าที่"
                 value={staffStatusName}
                 labelPad="ml-3"
@@ -219,7 +221,7 @@ export default function SortableCard({
             aria-label="Edit card"
           >
             <Image
-              src="/pencil.png"
+              src={`${base}/pencil.png`}
               alt="Edit"
               width={18}
               height={18}
@@ -251,7 +253,7 @@ function Line({
   return (
     <div className="flex items-center gap-2 text-sm sm:text-base">
       <Image
-        src={icon}
+        src={`${base}/${icon}`}
         alt={label}
         width={16}
         height={16}

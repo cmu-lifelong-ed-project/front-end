@@ -12,6 +12,7 @@ import { FaRegCalendarAlt } from "react-icons/fa"; // react-icons
 import { Plus, SquarePen, Trash2 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 type Props = {
   isOpen: boolean;
@@ -515,7 +516,7 @@ export default function QueueModal(props: Props) {
                 >
                   <span className="flex items-center gap-2 text-sm">
                     <Image
-                      src="/queuecard/list.png"
+                      src={`${base}/queuecard/list.png`}
                       alt="list icon"
                       width={20}
                       height={20}
@@ -540,7 +541,7 @@ export default function QueueModal(props: Props) {
                 >
                   <span className="flex items-center gap-2 text-sm">
                     <Image
-                      src="/queuecard/checked.png"
+                      src={`${base}/queuecard/checked.png`}
                       alt="checked icon"
                       width={20}
                       height={20}

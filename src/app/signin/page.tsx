@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 export default function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#dcc0f2] px-4">
@@ -7,7 +9,7 @@ export default function SignInPage() {
         {/* Logo */}
         <div className="flex justify-center mt-4 mb-15">
           <Image
-            src="/logo_le.png"
+            src={`${base}/logo_le.png`}
             alt="Logo"
             width={300}
             height={300}
@@ -16,7 +18,7 @@ export default function SignInPage() {
         </div>
 
         {/* Button */}
-        <a href="/api/signIn">
+        <a href={`${base}/api/signIn`}>
           <button className="w-full bg-gradient-to-r from-purple-800 to-purple-400 text-white font-semibold py-3 rounded-full shadow-md text-base md:text-lg lg:text-xl">
             Sign-in with CMU Account
           </button>
