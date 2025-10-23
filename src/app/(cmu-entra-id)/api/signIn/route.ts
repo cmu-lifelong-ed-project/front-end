@@ -8,6 +8,11 @@ type SuccessResponse = { ok: true };
 type ErrorResponse = { ok: false; message: string };
 export type SignInResponse = SuccessResponse | ErrorResponse;
 
+const http = axios.create({
+  proxy: false,
+  timeout: 15000,
+});
+
 async function getEmtraIDAccessTokenAsync(
   authorizationCode: string
 ): Promise<string | null> {
@@ -26,10 +31,8 @@ async function getEmtraIDAccessTokenAsync(
     params.append("scope", scope);
     params.append("grant_type", "authorization_code");
 
-    const response = await axios.post(tokenUrl, params.toString(), {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+    const response = await http.post(tokenUrl, params.toString(), {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
 
     return response.data.access_token;
@@ -42,7 +45,7 @@ async function getEmtraIDAccessTokenAsync(
 async function getCMUBasicInfoAsync(accessToken: string) {
   try {
     const basicInfoUrl = process.env.CMU_ENTRAID_GET_BASIC_INFO!;
-    const response = await axios.get(basicInfoUrl, {
+    const response = await http.get(basicInfoUrl, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     return response.data as CmuEntraIDBasicInfo;
@@ -143,7 +146,7 @@ export async function POST(req: NextRequest) {
 
     let backendToken: string | null = null;
     try {
-      const res = await axios.post(`${backendUrl}/auth`, {
+      const res = await http.post(`${backendUrl}/auth`, {
         cmuitaccount_name: cmuBasicInfo.cmuitaccount_name,
         cmuitaccount: cmuBasicInfo.cmuitaccount,
         student_id: cmuBasicInfo.student_id,
